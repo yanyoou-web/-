@@ -1011,6 +1011,8 @@ function vSet() {
   out += '<button class="btn main wide" style="margin-top:10px" data-a="expJson">記録を書き出す（戻せる形）</button>';
   out += '<button class="btn wide ghost" style="margin-top:8px" data-a="expCsv">売上を書き出す（表の形）</button>';
   out += '<button class="btn wide ghost" style="margin-top:8px" data-a="showJson">画面に出してコピーする</button>';
+  out += '<div class="tiny" style="margin-top:8px">ファイルが出てこない環境（claude.ai で開いたときなど）では、'
+    + '<b>「画面に出してコピーする」</b>を使ってください。コピーした中身からそのまま戻せます。</div>';
   out += '<hr class="hr">';
   out += '<button class="btn wide" data-a="impFile">書き出したファイルから戻す</button>';
   out += '<button class="btn wide ghost" style="margin-top:8px" data-a="impPaste">貼り付けて戻す</button>';
