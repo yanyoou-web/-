@@ -2,7 +2,7 @@
    一度書いたら、ふだんは触らない。
    index.html を直したときは、下の VERSION の数字を1つ増やす。 */
 
-var VERSION = 'nokichi-v1';
+var VERSION = 'nokichi-v2';
 var FILES = [
   './',
   './index.html',
@@ -34,11 +34,14 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
-  if (new URL(req.url).origin !== self.location.origin) return;
+  var u = new URL(req.url);
+  /* 自分のファイルと、文字の形（フォント）だけを持っておく */
+  var isFont = (u.hostname === 'fonts.googleapis.com' || u.hostname === 'fonts.gstatic.com');
+  if (u.origin !== self.location.origin && !isFont) return;
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(function (hit) {
       var net = fetch(req).then(function (res) {
-        if (res && res.ok) {
+        if (res && (res.ok || res.type === 'opaque')) {
           caches.open(VERSION).then(function (c) { c.put(req, res.clone()); });
         }
         return res;

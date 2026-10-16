@@ -3,42 +3,65 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#b3261e">
+<meta name="theme-color" content="#0b0b0e" id="tc">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="にのきち">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="icon" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
 <title>屋台にのきち レジ</title>
 <style>
-/* ===== 色と大きさ ===== 日差しの下で見えるように、白地に濃い文字 ===== */
+/* ===== フォント ===== 看板むきの極太＋読みやすい本文の2本立て ===== */
+@font-face{font-family:'ZenKakuFallback';src:local("Hiragino Sans"),local("Noto Sans JP"),local("sans-serif")}
+
+/* ===== 色 =====
+   標準は黒基調。日なたで見えにくいときは、右上のボタンで昼の表示に切りかえる。 */
 :root{
-  --bg:#fff; --ink:#101010; --sub:#555; --line:#d4d4d4; --soft:#f4f4f4;
-  --accent:#b3261e; --ok:#0a6e2c; --warn:#9a5200; --bad:#c20d0d;
-  --pad:12px; --r:12px;
-  --top:52px; --tabs:64px;
+  --bg:#0b0b0e; --surface:#15151a; --raised:#1d1d24; --soft:#1d1d24;
+  --ink:#f4f4f6; --sub:#9b9ba6; --line:#2d2d37; --bar:rgba(11,11,14,.9);
+  --accent:#ff4a24; --accent-l:#ff7a52; --accent-soft:rgba(255,74,36,.14); --nextbg:#1b1210;
+  --ok:#22c55e; --ok-d:#15803d; --warn:#f5a524; --bad:#ff5457;
+  --okbg:rgba(34,197,94,.12); --warnbg:rgba(245,165,36,.12); --badbg:rgba(255,84,87,.12);
+  --toast:#2a2a34; --shadow:0 10px 26px rgba(0,0,0,.6);
+  --f-ui:'Zen Kaku Gothic New','Hiragino Sans','Noto Sans JP',system-ui,sans-serif;
+  --f-disp:'Dela Gothic One','Zen Kaku Gothic New','Hiragino Sans',sans-serif;
+  --pad:12px; --r:14px; --top:54px; --tabs:66px;
+}
+:root[data-theme="light"]{
+  --bg:#fff; --surface:#fff; --raised:#f6f6f7; --soft:#f2f2f4;
+  --ink:#0e0e10; --sub:#53535c; --line:#d2d2d8; --bar:rgba(255,255,255,.95);
+  --accent:#c9330f; --accent-l:#e2502c; --accent-soft:rgba(201,51,15,.08); --nextbg:#fff6f3;
+  --ok:#0a6e2c; --ok-d:#0a6e2c; --warn:#9a5200; --bad:#c20d0d;
+  --okbg:#eaf6ed; --warnbg:#fff3e0; --badbg:#fdecec;
+  --toast:#101014; --shadow:0 8px 20px rgba(0,0,0,.18);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;height:100%}
+html,body{margin:0;padding:0;height:100%;background:var(--bg)}
 body{
-  background:var(--bg); color:var(--ink);
-  font:500 17px/1.45 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
-  overscroll-behavior:none; -webkit-text-size-adjust:100%;
+  color:var(--ink);
+  font:500 17px/1.45 var(--f-ui);
+  overscroll-behavior:none;-webkit-text-size-adjust:100%;
+  font-feature-settings:"palt" 1;
 }
-button,input,select,textarea{font:inherit;color:inherit}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.d{font-family:var(--f-disp);font-weight:400;letter-spacing:.01em}
 
 /* ===== 骨組み ===== */
 #top{
   position:fixed;top:0;left:0;right:0;height:calc(var(--top) + env(safe-area-inset-top));
   padding:env(safe-area-inset-top) var(--pad) 0;
-  display:flex;align-items:center;gap:10px;
-  background:#fff;border-bottom:2px solid var(--line);z-index:20
+  display:flex;align-items:center;gap:8px;
+  background:var(--bar);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);z-index:20
 }
 #scr{
-  padding:calc(var(--top) + env(safe-area-inset-top) + 8px) var(--pad)
+  padding:calc(var(--top) + env(safe-area-inset-top) + 10px) var(--pad)
          calc(var(--tabs) + env(safe-area-inset-bottom) + 30px);
   min-height:100%;
 }
@@ -46,187 +69,231 @@ button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   position:fixed;left:0;right:0;bottom:0;z-index:20;
   height:calc(var(--tabs) + env(safe-area-inset-bottom));
   padding-bottom:env(safe-area-inset-bottom);
-  display:flex;background:#fff;border-top:2px solid var(--line)
+  display:flex;background:var(--bar);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line)
 }
 #tabs button{
   flex:1;border:0;background:none;padding:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   font-size:12px;font-weight:700;color:var(--sub)
 }
-#tabs button .big{font-size:20px;line-height:1}
+#tabs button .big{font-size:21px;line-height:1;filter:grayscale(1) opacity(.65)}
 #tabs button[aria-current="true"]{color:var(--accent)}
-#tabs button[aria-current="true"] .big{transform:scale(1.08)}
+#tabs button[aria-current="true"] .big{filter:none;transform:scale(1.1)}
 
-/* ===== 保存ランプ ===== */
-.lamp{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;white-space:nowrap}
-.lamp .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
-.lamp.ok{color:var(--ok)} .lamp.ok .dot{background:var(--ok)}
-.lamp.ng{color:#fff;background:var(--bad);padding:4px 8px;border-radius:8px}
+/* ===== 上のバー ===== */
+.lamp{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.lamp .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.lamp.ok{color:var(--ok)}
+.lamp.ok .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.lamp.ng{color:#fff;background:var(--bad);padding:5px 9px;border-radius:999px}
 .lamp.ng .dot{background:#fff}
-#top .title{font-size:15px;font-weight:800;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#top .title{
+  font-family:var(--f-disp);font-weight:400;font-size:15px;flex:1 1 auto;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.02em
+}
+.iconbtn{
+  width:40px;height:40px;flex:0 0 auto;border:1px solid var(--line);border-radius:12px;
+  background:var(--raised);font-size:17px;line-height:1;padding:0;display:flex;
+  align-items:center;justify-content:center
+}
+
+/* ===== 焼く数バー ===== 調理係に「あと何枚」を伝えるために常に出す ===== */
+#pend{
+  position:fixed;left:0;right:0;z-index:19;display:none;
+  top:calc(var(--top) + env(safe-area-inset-top));height:50px;
+  align-items:center;gap:16px;padding:0 var(--pad);overflow-x:auto;
+  background:var(--bar);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);scrollbar-width:none
+}
+#pend::-webkit-scrollbar{display:none}
+body.haspend #pend{display:flex}
+body.haspend #scr{padding-top:calc(var(--top) + env(safe-area-inset-top) + 60px)}
+body.haspend .tk.next{top:calc(var(--top) + env(safe-area-inset-top) + 50px)}
+#pend .pl{font-size:10px;font-weight:800;color:var(--sub);letter-spacing:.2em;flex:0 0 auto}
+#pend .pi{display:flex;align-items:baseline;gap:6px;flex:0 0 auto}
+#pend .pi b{font-size:14px;font-weight:700}
+#pend .pi em{font-family:var(--f-disp);font-style:normal;font-size:25px;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums}
 
 /* ===== 共通の部品 ===== */
-.card{border:2px solid var(--line);border-radius:var(--r);padding:var(--pad);margin:0 0 12px}
-.sec{margin:0 0 20px}
-.sec > h2{font-size:15px;font-weight:800;color:var(--sub);margin:0 0 8px;letter-spacing:.02em}
+.card{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:var(--pad);margin:0 0 12px}
+.sec{margin:0 0 22px}
+.sec > h2{font-size:12px;font-weight:800;color:var(--sub);margin:0 0 9px;letter-spacing:.14em;text-transform:none}
 .row{display:flex;gap:8px;align-items:center}
 .row.wrap{flex-wrap:wrap}
 .grow{flex:1 1 auto;min-width:0}
 .muted{color:var(--sub);font-size:14px}
 .tiny{font-size:12px;color:var(--sub)}
-.hr{height:2px;background:var(--line);border:0;margin:16px 0}
+.hr{height:1px;background:var(--line);border:0;margin:16px 0}
 .btn{
-  min-height:52px;padding:10px 14px;border:2px solid var(--ink);border-radius:var(--r);
-  background:#fff;font-weight:800;font-size:16px
+  min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--raised);color:var(--ink);font-weight:700;font-size:16px
 }
-.btn:active{background:var(--soft)}
-.btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.go{background:var(--ok);border-color:var(--ok);color:#fff}
-.btn.off{background:var(--soft);border-color:var(--line);color:var(--sub)}
-.btn.sm{min-height:42px;font-size:14px;padding:6px 10px;border-width:2px}
+.btn:active{transform:scale(.985);filter:brightness(1.25)}
+.btn.main{
+  background:linear-gradient(180deg,var(--accent-l),var(--accent));
+  border-color:var(--accent);color:#fff;font-family:var(--f-disp);font-weight:400;
+  box-shadow:0 6px 18px rgba(255,74,36,.3)
+}
+.btn.go{background:var(--ok-d);border-color:var(--ok);color:#fff}
+.btn.off{background:var(--soft);border-color:var(--line);color:var(--sub);box-shadow:none;font-family:var(--f-ui);font-weight:700}
+.btn.sm{min-height:42px;font-size:14px;padding:6px 12px}
 .btn.wide{width:100%}
-.btn.ghost{border-color:var(--line);font-weight:700}
-.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
 input[type=text],input[type=number],input[type=date],input[type=time],textarea{
-  width:100%;min-height:50px;padding:10px 12px;border:2px solid var(--line);
-  border-radius:var(--r);background:#fff
+  width:100%;min-height:50px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--raised);color:var(--ink)
 }
+input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
 textarea{min-height:160px;font-size:13px;font-family:ui-monospace,monospace}
 label.fld{display:block;margin:0 0 10px}
-label.fld > span{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:0 0 4px}
-.note{background:var(--soft);border-radius:var(--r);padding:10px 12px;font-size:14px}
-.banner{border-radius:var(--r);padding:10px 12px;font-weight:800;margin:0 0 12px;font-size:15px}
-.banner.warn{background:#fff3e0;border:2px solid var(--warn);color:var(--warn)}
-.banner.bad{background:#fdecec;border:2px solid var(--bad);color:var(--bad)}
-.banner.ok{background:#eaf6ed;border:2px solid var(--ok);color:var(--ok)}
+label.fld > span{display:block;font-size:12px;font-weight:700;color:var(--sub);margin:0 0 5px}
+.note{background:var(--raised);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;font-size:14px}
+.banner{border-radius:var(--r);padding:11px 13px;font-weight:700;margin:0 0 12px;font-size:15px;border:1px solid}
+.banner.warn{background:var(--warnbg);border-color:var(--warn);color:var(--warn)}
+.banner.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.banner.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
 
 /* ===== 注文の画面 ===== */
-.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 14px}
+.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 16px}
 .item{
-  position:relative;min-height:104px;border:3px solid var(--ink);border-radius:var(--r);
-  background:#fff;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px
+  position:relative;min-height:104px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);display:flex;flex-direction:column;justify-content:center;gap:3px;padding:10px
 }
-.item .nm{font-size:21px;font-weight:800;line-height:1.2}
-.item .pr{font-size:15px;color:var(--sub);font-weight:700}
-.item.on{border-color:var(--accent);background:#fff6f5}
+.item .nm{font-family:var(--f-disp);font-weight:400;font-size:22px;line-height:1.2}
+.item .pr{font-size:14px;color:var(--sub);font-weight:700}
+.item.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
 .item .qty{
-  position:absolute;top:-10px;right:-8px;min-width:44px;height:44px;border-radius:22px;
-  background:var(--accent);color:#fff;font-size:22px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;padding:0 8px
+  position:absolute;top:-9px;right:-7px;min-width:44px;height:44px;border-radius:22px;
+  background:linear-gradient(180deg,var(--accent-l),var(--accent));color:#fff;
+  font-family:var(--f-disp);font-size:21px;
+  display:flex;align-items:center;justify-content:center;padding:0 8px;
+  box-shadow:0 4px 14px rgba(255,74,36,.45)
 }
 .item .minus{
   position:absolute;bottom:6px;right:6px;width:40px;height:40px;border-radius:20px;
-  border:2px solid var(--line);background:#fff;font-size:22px;font-weight:800;line-height:1;padding:0
+  border:1px solid var(--line);background:var(--raised);color:var(--ink);
+  font-size:22px;font-weight:800;line-height:1;padding:0
 }
-.total{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 14px}
-.total .lb{font-size:15px;font-weight:800;color:var(--sub)}
-.total .vl{font-size:36px;font-weight:800;letter-spacing:-.01em}
+.total{display:flex;align-items:flex-end;justify-content:space-between;margin:0 0 16px;gap:10px}
+.total .lb{font-size:12px;font-weight:800;color:var(--sub);letter-spacing:.14em}
+.total .vl{font-family:var(--f-disp);font-size:38px;line-height:1.1;font-variant-numeric:tabular-nums}
 
 .chips{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
 .chip{
-  border:3px solid var(--line);border-radius:10px;background:#fff;padding:5px 2px 4px;
-  display:flex;flex-direction:column;align-items:center;gap:3px;min-height:58px
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:6px 2px 5px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;min-height:60px
 }
-.chip .sw{width:30px;height:30px;border-radius:7px;border:1px solid rgba(0,0,0,.25)}
-.chip .lb{font-size:11px;font-weight:800;line-height:1}
-.chip.on{border-color:var(--accent);background:#fff6f5}
+.chip .sw{width:30px;height:30px;border-radius:8px;box-shadow:0 0 0 1.5px rgba(255,255,255,.4)}
+:root[data-theme="light"] .chip .sw{box-shadow:0 0 0 1.5px rgba(0,0,0,.28)}
+.chip .lb{font-size:11px;font-weight:800;line-height:1;color:var(--sub)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.chip.on .lb{color:var(--ink)}
 .kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-.kind{border:3px solid var(--line);border-radius:10px;background:#fff;min-height:48px;font-size:13px;font-weight:800;padding:4px}
-.kind.on{border-color:var(--accent);background:#fff6f5}
-.markview{display:flex;align-items:center;gap:8px;font-weight:800}
-.sw-i{width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,.25);flex:0 0 auto;display:inline-block;vertical-align:-6px}
+.kind{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);min-height:48px;font-size:13px;font-weight:700;padding:4px}
+.kind.on{border-color:var(--accent);background:var(--accent-soft)}
+.markview{display:flex;align-items:center;gap:8px;font-weight:700}
+.sw-i{width:26px;height:26px;border-radius:7px;box-shadow:0 0 0 1.5px rgba(255,255,255,.4);flex:0 0 auto;display:inline-block;vertical-align:-6px}
+:root[data-theme="light"] .sw-i{box-shadow:0 0 0 1.5px rgba(0,0,0,.28)}
 
 .cash{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.cash .btn{min-height:56px;font-size:17px}
+.cash .btn{min-height:56px;font-size:17px;font-variant-numeric:tabular-nums}
 .change{
-  margin:12px 0 0;border:3px solid var(--ok);border-radius:var(--r);
-  padding:10px 12px;display:flex;align-items:baseline;justify-content:space-between
+  margin:12px 0 0;border:1px solid var(--ok);background:var(--okbg);border-radius:var(--r);
+  padding:11px 14px;display:flex;align-items:baseline;justify-content:space-between;gap:10px
 }
-.change .lb{font-size:15px;font-weight:800;color:var(--ok)}
-.change .vl{font-size:40px;font-weight:800;color:var(--ok);line-height:1.1}
-.change.short{border-color:var(--bad)}
+.change .lb{font-size:12px;font-weight:800;color:var(--ok);letter-spacing:.14em}
+.change .vl{font-family:var(--f-disp);font-size:40px;color:var(--ok);line-height:1.1;font-variant-numeric:tabular-nums}
+.change.short{border-color:var(--bad);background:var(--badbg)}
 .change.short .lb,.change.short .vl{color:var(--bad)}
 #confirmBar{
-  position:sticky;bottom:0;padding:10px 0 2px;margin-top:14px;
-  background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 22%)
+  position:sticky;bottom:calc(var(--tabs) + env(safe-area-inset-bottom) + 6px);
+  padding:12px 0 2px;margin-top:16px;
+  background:linear-gradient(to bottom,transparent,var(--bg) 14%)
 }
-#confirmBar .btn{min-height:68px;font-size:20px}
+#confirmBar .btn{min-height:70px;font-size:20px}
+#confirmBar .change{margin:0 0 9px;background:var(--surface)}
+#confirmBar .change.short{background:var(--surface)}
 
 /* ===== 待ちの画面 ===== */
-.tk{border:3px solid var(--line);border-radius:var(--r);background:#fff;padding:12px;margin:0 0 12px}
+.tk{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:12px;margin:0 0 12px}
 .tk.next{
   position:sticky;top:calc(var(--top) + env(safe-area-inset-top));z-index:10;
-  border-color:var(--accent);box-shadow:0 6px 14px rgba(0,0,0,.14)
+  border-color:var(--accent);background:var(--nextbg);box-shadow:var(--shadow)
 }
-.tk .hd{display:flex;align-items:center;gap:10px;margin:0 0 6px}
-.tk .no{font-size:30px;font-weight:800;line-height:1;min-width:48px}
-.tk .what{font-size:21px;font-weight:800;line-height:1.25;flex:1 1 auto}
-.tk .paid{font-size:11px;font-weight:800;color:var(--ok);border:2px solid var(--ok);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.tk .hd{display:flex;align-items:center;gap:10px;margin:0 0 7px}
+.tk .no{font-family:var(--f-disp);font-size:30px;line-height:1;min-width:46px;color:var(--accent)}
+.tk .what{font-size:21px;font-weight:700;line-height:1.25;flex:1 1 auto}
+.tk .paid{font-size:10px;font-weight:800;color:var(--ok);border:1px solid var(--ok);border-radius:999px;padding:3px 8px;white-space:nowrap;letter-spacing:.06em}
 .tk .meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px}
 .tk .el{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
-.tk.late{border-color:var(--warn);background:#fffaf3}
+.tk.late{border-color:var(--warn)}
 .tk.late .el{color:var(--warn)}
-.tk.vlate{border-color:var(--bad);background:#fdf2f2}
+.tk.vlate{border-color:var(--bad)}
 .tk.vlate .el{color:var(--bad)}
-.tk .flag{font-size:13px;font-weight:800;color:var(--bad)}
+.tk .flag{font-size:13px;font-weight:700;color:var(--bad);margin:0 0 8px}
 .tk .btn{min-height:58px;font-size:18px}
 .tk:not(.next){padding:10px}
 .tk:not(.next) .no{font-size:25px;min-width:40px}
 .tk:not(.next) .what{font-size:19px}
 .tk:not(.next) .meta{margin-bottom:8px}
 .tk:not(.next) .btn{min-height:46px;font-size:15px}
-.nextlb{font-size:12px;font-weight:800;color:var(--accent);margin:0 0 4px}
-.empty{text-align:center;padding:48px 16px;color:var(--sub)}
-.empty .big{font-size:52px;margin:0 0 8px}
+.nextlb{font-size:10px;font-weight:800;color:var(--accent);margin:0 0 5px;letter-spacing:.2em}
+.empty{text-align:center;padding:54px 16px;color:var(--sub)}
+.empty .big{font-size:54px;margin:0 0 10px}
 
 /* ===== 売上の画面 ===== */
-.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
-.kpi > div{border:2px solid var(--line);border-radius:var(--r);padding:10px 8px;text-align:center}
-.kpi .lb{font-size:11px;font-weight:800;color:var(--sub)}
-.kpi .vl{font-size:22px;font-weight:800;margin-top:2px}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
+.kpi > div{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:11px 8px;text-align:center}
+.kpi .lb{font-size:10px;font-weight:800;color:var(--sub);letter-spacing:.12em}
+.kpi .vl{font-family:var(--f-disp);font-size:23px;margin-top:3px;font-variant-numeric:tabular-nums}
 table.t{width:100%;border-collapse:collapse;font-size:15px}
-table.t th,table.t td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
-table.t th{font-size:12px;color:var(--sub)}
+table.t th,table.t td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}
+table.t th{font-size:11px;color:var(--sub);letter-spacing:.1em;font-weight:800}
 table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.bars{display:flex;flex-direction:column;gap:6px}
+.bars{display:flex;flex-direction:column;gap:7px}
 .bars .b{display:flex;align-items:center;gap:8px;font-size:13px}
-.bars .b .hh{width:48px;flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums}
-.bars .b .tr{flex:1 1 auto;height:22px;background:var(--soft);border-radius:6px;overflow:hidden}
-.bars .b .tr i{display:block;height:100%;background:var(--accent)}
-.bars .b .vv{width:84px;flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.bars .b .hh{width:46px;flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums;color:var(--sub)}
+.bars .b .tr{flex:1 1 auto;height:20px;background:var(--raised);border-radius:999px;overflow:hidden}
+.bars .b .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-l));border-radius:999px}
+.bars .b .vv{width:86px;flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
 .void{text-decoration:line-through;color:var(--sub)}
 
 /* ===== 下から出る知らせ ===== */
 #toast{
   position:fixed;left:10px;right:10px;z-index:40;
   bottom:calc(var(--tabs) + env(safe-area-inset-bottom) + 10px);
-  background:#101010;color:#fff;border-radius:var(--r);padding:12px 12px 8px;
-  display:none;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 8px 20px rgba(0,0,0,.3)
+  background:var(--toast);color:#fff;border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--r);padding:12px 12px 8px;
+  display:none;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--shadow)
 }
 #toast.show{display:flex}
-#toast .t-msg{flex:1 1 auto;font-weight:800;font-size:15px}
+#toast .t-msg{flex:1 1 auto;font-weight:700;font-size:15px}
 #toast .t-undo{
-  border:2px solid #fff;background:none;color:#fff;border-radius:10px;
-  min-height:44px;padding:4px 16px;font-weight:800;font-size:16px
+  border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.08);color:#fff;border-radius:12px;
+  min-height:44px;padding:4px 18px;font-weight:800;font-size:16px
 }
-#toast .t-bar{flex:1 1 100%;height:4px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden;margin-top:6px}
-#toast .t-bar i{display:block;height:100%;background:#fff;width:100%}
+#toast .t-bar{flex:1 1 100%;height:3px;background:rgba(255,255,255,.22);border-radius:2px;overflow:hidden;margin-top:8px}
+#toast .t-bar i{display:block;height:100%;background:var(--accent-l);width:100%}
 
 /* ===== 重ねる画面 ===== */
-#over{position:fixed;inset:0;z-index:60;display:none;background:rgba(0,0,0,.5);
+#over{position:fixed;inset:0;z-index:60;display:none;background:rgba(0,0,0,.72);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
   padding:calc(env(safe-area-inset-top) + 14px) 12px calc(env(safe-area-inset-bottom) + 14px);
   overflow:auto;-webkit-overflow-scrolling:touch}
 #over.show{display:block}
-.sheet{background:#fff;border-radius:16px;padding:16px;max-width:520px;margin:0 auto}
-.sheet h2{margin:0 0 10px;font-size:21px;font-weight:800}
-.sheet .big{font-size:34px;font-weight:800;margin:4px 0}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;max-width:520px;margin:0 auto;box-shadow:var(--shadow)}
+.sheet h2{margin:0 0 12px;font-family:var(--f-disp);font-weight:400;font-size:21px}
+.sheet .big{font-family:var(--f-disp);font-size:34px;margin:6px 0}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.pad button{min-height:62px;font-size:26px;font-weight:800;border:2px solid var(--line);border-radius:var(--r);background:#fff}
-.padview{border:2px solid var(--line);border-radius:var(--r);padding:10px 12px;font-size:32px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.pad button{min-height:62px;font-family:var(--f-disp);font-size:25px;border:1px solid var(--line);border-radius:var(--r);background:var(--raised);color:var(--ink)}
+.padview{border:1px solid var(--line);background:var(--raised);border-radius:var(--r);padding:10px 14px;font-family:var(--f-disp);font-size:32px;text-align:right;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
 <header id="top"></header>
+<div id="pend"></div>
 <main id="scr"></main>
 <nav id="tabs"></nav>
 <div id="toast"></div>
@@ -303,7 +370,7 @@ function rebuild(entries) {
   var st = {
     event: null,
     menu: [],
-    settings: { perGroupMin: 3, wake: true, cashCount: null },
+    settings: { perGroupMin: 3, wake: true, cashCount: null, theme: 'dark' },
     tickets: [],
     lastAt: null,
     openN: 0
@@ -467,6 +534,20 @@ function closeLeftSec() {
   return (d.getTime() - Date.now()) / 1000;
 }
 
+/* まだ渡していない注文の点数。調理係に「あと何枚」と伝えるために使う。
+   お会計が済んで受け取り待ちのものが、そのまま焼く数になる。 */
+function pending() {
+  var m = {}, out = [], k;
+  waiting().forEach(function (t) {
+    t.lines.forEach(function (l) { m[l.name] = (m[l.name] || 0) + l.qty; });
+  });
+  S.menu.forEach(function (it) {
+    if (m[it.name]) { out.push({ name: it.name, q: m[it.name] }); delete m[it.name]; }
+  });
+  for (k in m) out.push({ name: k, q: m[k] });
+  return out;
+}
+
 /* ============================= 入力中の注文 ============================= */
 
 var draft = { qty: {}, mark: { color: '', kind: '', name: '' }, received: null };
@@ -523,11 +604,26 @@ var $scr = document.getElementById('scr');
 var $tabs = document.getElementById('tabs');
 var $toast = document.getElementById('toast');
 var $over = document.getElementById('over');
+var $pend = document.getElementById('pend');
+
+/* 黒基調と、日なた用の明るい表示を切りかえる */
+function applyTheme() {
+  var t = (S && S.settings.theme === 'light') ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  var mc = document.getElementById('tc');
+  if (mc) mc.setAttribute('content', t === 'light' ? '#ffffff' : '#0b0b0e');
+}
 
 function render() {
   if (!S) return;
+  applyTheme();
   $top.innerHTML = vTop();
   $tabs.innerHTML = vTabs();
+  var ps = (tab === 'order' || tab === 'wait') ? pending() : [];
+  document.body.classList.toggle('haspend', ps.length > 0);
+  $pend.innerHTML = ps.length ? ('<span class="pl">焼く数</span>' + ps.map(function (x) {
+    return '<span class="pi"><b>' + h(x.name) + '</b><em>' + x.q + '</em></span>';
+  }).join('')) : '';
   var f = { order: vOrder, wait: vWait, sales: vSales, set: vSet }[tab] || vOrder;
   $scr.innerHTML = f();
   tick();
@@ -540,7 +636,9 @@ function vTop() {
   var ttl = S.event
     ? (S.event.name || '営業中') + (S.event.closedAt ? '（終了）' : '')
     : '営業がはじまっていません';
-  return '<div class="title">' + h(ttl) + '</div>' + l;
+  var tb = '<button class="iconbtn" data-a="theme" aria-label="表示の切りかえ">'
+    + (S.settings.theme === 'light' ? '🌙' : '☀️') + '</button>';
+  return '<div class="title">' + h(ttl) + '</div>' + l + tb;
 }
 
 function vTabs() {
@@ -595,10 +693,9 @@ function vOrder() {
   }
 
   /* 合計 */
-  out += '<div class="total"><span class="lb">合計</span><span class="vl">' + yen(total) + '</span></div>';
-  if (ls.length) {
-    out += '<div class="row" style="margin:-6px 0 14px"><button class="btn sm ghost" data-a="clearItems">商品をぜんぶ消す</button></div>';
-  }
+  out += '<div class="total"><div><div class="lb">合計</div>'
+    + (ls.length ? '<button class="btn sm ghost" style="margin-top:7px" data-a="clearItems">ぜんぶ消す</button>' : '')
+    + '</div><span class="vl">' + yen(total) + '</span></div>';
 
   /* 見分けるための印 */
   out += '<div class="sec"><h2>見分けるための印</h2>';
@@ -638,15 +735,12 @@ function vOrder() {
       out += '<button class="btn' + (draft.received === v ? ' go' : '') + '" data-a="recv" data-v="' + v + '">'
         + (i === 0 ? 'ちょうど' : v.toLocaleString('ja-JP')) + '</button>';
     });
-    out += '<button class="btn ghost" data-a="pad">数字で入れる</button>';
+    out += '<button class="btn ghost" data-a="pad">その他</button>';
     out += '</div>';
     if (draft.received != null) {
-      var ch = draft.received - total;
-      out += '<div class="change' + (ch < 0 ? ' short' : '') + '">'
-        + '<span class="lb">' + (ch < 0 ? '足りません' : 'おつり') + '</span>'
-        + '<span class="vl">' + yen(Math.abs(ch)) + '</span></div>'
-        + '<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="recv" data-v="">預かりを消す</button>'
-        + '<span class="tiny">（おつりの計算がいらないときは、入れなくても確定できます）</span></div>';
+      out += '<div class="row wrap" style="margin-top:10px">'
+        + '<button class="btn sm ghost" data-a="recv" data-v="">預かりを消す</button>'
+        + '<span class="tiny">おつりは下に大きく出ます</span></div>';
     } else {
       out += '<div class="tiny" style="margin-top:8px">おつりの計算がいらないときは、入れなくても確定できます。</div>';
     }
@@ -658,8 +752,14 @@ function vOrder() {
   /* 確定 */
   var bad = (draft.received != null && draft.received < total);
   var can = ls.length > 0 && !bad;
-  out += '<div id="confirmBar">'
-    + '<button class="btn main wide' + (can ? '' : ' off') + '" data-a="confirm">'
+  out += '<div id="confirmBar">';
+  if (total > 0 && draft.received != null) {
+    var ch = draft.received - total;
+    out += '<div class="change' + (ch < 0 ? ' short' : '') + '">'
+      + '<span class="lb">' + (ch < 0 ? '足りません' : 'おつり') + '</span>'
+      + '<span class="vl">' + yen(Math.abs(ch)) + '</span></div>';
+  }
+  out += '<button class="btn main wide' + (can ? '' : ' off') + '" data-a="confirm">'
     + (ls.length === 0 ? '商品を選んでください'
       : bad ? '預かったお金が足りません'
         : '確定　（待ち 約' + roundMin5(est) + '分）')
@@ -708,6 +808,7 @@ function vWait() {
     out += '</div>';
   });
   out += '<div class="tiny" style="text-align:center;padding:4px 0 10px">'
+    + '上の「焼く数」は、まだ渡していない注文の点数です。調理係にそのまま伝えられます。<br>'
     + 'カードを長押しすると取り消せます。渡したあと5秒は「戻す」が出ます。</div>';
   return out;
 }
@@ -887,6 +988,11 @@ function vSet() {
 
   /* 使い勝手 */
   out += '<div class="sec"><h2>使い勝手</h2><div class="card">';
+  out += '<div class="row"><div class="grow"><b>画面の色</b><div class="tiny">ふだんは黒基調。'
+    + '<b>日なたで見えにくいときは「昼」にしてください。</b>白地のほうが太陽光に負けません。'
+    + '上のバーの右にあるボタンでも切りかえられます。</div></div>'
+    + '<button class="btn sm" data-a="theme">' + (S.settings.theme === 'light' ? '昼' : '夜') + '</button></div>';
+  out += '<hr class="hr">';
   out += '<div class="row"><div class="grow"><b>画面を消さない</b><div class="tiny">使っているあいだ、画面が暗くならないようにします（機種によっては効きません）。</div></div>'
     + '<button class="btn sm ' + (S.settings.wake ? 'go' : '') + '" data-a="toggleWake">' + (S.settings.wake ? 'する' : 'しない') + '</button></div>';
   out += '<hr class="hr">';
@@ -1285,6 +1391,9 @@ function act(a, v, el) {
       return;
 
     /* --- 使い勝手 --- */
+    case 'theme':
+      append({ t: 'set', settings: { theme: S.settings.theme === 'light' ? 'dark' : 'light' } });
+      return;
     case 'toggleWake':
       append({ t: 'set', settings: { wake: !S.settings.wake } });
       reqWake();
