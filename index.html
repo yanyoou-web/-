@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#b3261e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="にのきち">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+<title>屋台にのきち レジ</title>
+<style>
+/* ===== 色と大きさ ===== 日差しの下で見えるように、白地に濃い文字 ===== */
+:root{
+  --bg:#fff; --ink:#101010; --sub:#555; --line:#d4d4d4; --soft:#f4f4f4;
+  --accent:#b3261e; --ok:#0a6e2c; --warn:#9a5200; --bad:#c20d0d;
+  --pad:12px; --r:12px;
+  --top:52px; --tabs:64px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font:500 17px/1.45 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  overscroll-behavior:none; -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+
+/* ===== 骨組み ===== */
+#top{
+  position:fixed;top:0;left:0;right:0;height:calc(var(--top) + env(safe-area-inset-top));
+  padding:env(safe-area-inset-top) var(--pad) 0;
+  display:flex;align-items:center;gap:10px;
+  background:#fff;border-bottom:2px solid var(--line);z-index:20
+}
+#scr{
+  padding:calc(var(--top) + env(safe-area-inset-top) + 8px) var(--pad)
+         calc(var(--tabs) + env(safe-area-inset-bottom) + 30px);
+  min-height:100%;
+}
+#tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  height:calc(var(--tabs) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  display:flex;background:#fff;border-top:2px solid var(--line)
+}
+#tabs button{
+  flex:1;border:0;background:none;padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:12px;font-weight:700;color:var(--sub)
+}
+#tabs button .big{font-size:20px;line-height:1}
+#tabs button[aria-current="true"]{color:var(--accent)}
+#tabs button[aria-current="true"] .big{transform:scale(1.08)}
+
+/* ===== 保存ランプ ===== */
+.lamp{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;white-space:nowrap}
+.lamp .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.lamp.ok{color:var(--ok)} .lamp.ok .dot{background:var(--ok)}
+.lamp.ng{color:#fff;background:var(--bad);padding:4px 8px;border-radius:8px}
+.lamp.ng .dot{background:#fff}
+#top .title{font-size:15px;font-weight:800;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== 共通の部品 ===== */
+.card{border:2px solid var(--line);border-radius:var(--r);padding:var(--pad);margin:0 0 12px}
+.sec{margin:0 0 20px}
+.sec > h2{font-size:15px;font-weight:800;color:var(--sub);margin:0 0 8px;letter-spacing:.02em}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grow{flex:1 1 auto;min-width:0}
+.muted{color:var(--sub);font-size:14px}
+.tiny{font-size:12px;color:var(--sub)}
+.hr{height:2px;background:var(--line);border:0;margin:16px 0}
+.btn{
+  min-height:52px;padding:10px 14px;border:2px solid var(--ink);border-radius:var(--r);
+  background:#fff;font-weight:800;font-size:16px
+}
+.btn:active{background:var(--soft)}
+.btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.go{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.off{background:var(--soft);border-color:var(--line);color:var(--sub)}
+.btn.sm{min-height:42px;font-size:14px;padding:6px 10px;border-width:2px}
+.btn.wide{width:100%}
+.btn.ghost{border-color:var(--line);font-weight:700}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+input[type=text],input[type=number],input[type=date],input[type=time],textarea{
+  width:100%;min-height:50px;padding:10px 12px;border:2px solid var(--line);
+  border-radius:var(--r);background:#fff
+}
+textarea{min-height:160px;font-size:13px;font-family:ui-monospace,monospace}
+label.fld{display:block;margin:0 0 10px}
+label.fld > span{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:0 0 4px}
+.note{background:var(--soft);border-radius:var(--r);padding:10px 12px;font-size:14px}
+.banner{border-radius:var(--r);padding:10px 12px;font-weight:800;margin:0 0 12px;font-size:15px}
+.banner.warn{background:#fff3e0;border:2px solid var(--warn);color:var(--warn)}
+.banner.bad{background:#fdecec;border:2px solid var(--bad);color:var(--bad)}
+.banner.ok{background:#eaf6ed;border:2px solid var(--ok);color:var(--ok)}
+
+/* ===== 注文の画面 ===== */
+.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 14px}
+.item{
+  position:relative;min-height:104px;border:3px solid var(--ink);border-radius:var(--r);
+  background:#fff;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px
+}
+.item .nm{font-size:21px;font-weight:800;line-height:1.2}
+.item .pr{font-size:15px;color:var(--sub);font-weight:700}
+.item.on{border-color:var(--accent);background:#fff6f5}
+.item .qty{
+  position:absolute;top:-10px;right:-8px;min-width:44px;height:44px;border-radius:22px;
+  background:var(--accent);color:#fff;font-size:22px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;padding:0 8px
+}
+.item .minus{
+  position:absolute;bottom:6px;right:6px;width:40px;height:40px;border-radius:20px;
+  border:2px solid var(--line);background:#fff;font-size:22px;font-weight:800;line-height:1;padding:0
+}
+.total{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 14px}
+.total .lb{font-size:15px;font-weight:800;color:var(--sub)}
+.total .vl{font-size:36px;font-weight:800;letter-spacing:-.01em}
+
+.chips{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.chip{
+  border:3px solid var(--line);border-radius:10px;background:#fff;padding:5px 2px 4px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;min-height:58px
+}
+.chip .sw{width:30px;height:30px;border-radius:7px;border:1px solid rgba(0,0,0,.25)}
+.chip .lb{font-size:11px;font-weight:800;line-height:1}
+.chip.on{border-color:var(--accent);background:#fff6f5}
+.kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.kind{border:3px solid var(--line);border-radius:10px;background:#fff;min-height:48px;font-size:13px;font-weight:800;padding:4px}
+.kind.on{border-color:var(--accent);background:#fff6f5}
+.markview{display:flex;align-items:center;gap:8px;font-weight:800}
+.sw-i{width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,.25);flex:0 0 auto;display:inline-block;vertical-align:-6px}
+
+.cash{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cash .btn{min-height:56px;font-size:17px}
+.change{
+  margin:12px 0 0;border:3px solid var(--ok);border-radius:var(--r);
+  padding:10px 12px;display:flex;align-items:baseline;justify-content:space-between
+}
+.change .lb{font-size:15px;font-weight:800;color:var(--ok)}
+.change .vl{font-size:40px;font-weight:800;color:var(--ok);line-height:1.1}
+.change.short{border-color:var(--bad)}
+.change.short .lb,.change.short .vl{color:var(--bad)}
+#confirmBar{
+  position:sticky;bottom:0;padding:10px 0 2px;margin-top:14px;
+  background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 22%)
+}
+#confirmBar .btn{min-height:68px;font-size:20px}
+
+/* ===== 待ちの画面 ===== */
+.tk{border:3px solid var(--line);border-radius:var(--r);background:#fff;padding:12px;margin:0 0 12px}
+.tk.next{
+  position:sticky;top:calc(var(--top) + env(safe-area-inset-top));z-index:10;
+  border-color:var(--accent);box-shadow:0 6px 14px rgba(0,0,0,.14)
+}
+.tk .hd{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.tk .no{font-size:30px;font-weight:800;line-height:1;min-width:48px}
+.tk .what{font-size:21px;font-weight:800;line-height:1.25;flex:1 1 auto}
+.tk .paid{font-size:11px;font-weight:800;color:var(--ok);border:2px solid var(--ok);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.tk .meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+.tk .el{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.tk.late{border-color:var(--warn);background:#fffaf3}
+.tk.late .el{color:var(--warn)}
+.tk.vlate{border-color:var(--bad);background:#fdf2f2}
+.tk.vlate .el{color:var(--bad)}
+.tk .flag{font-size:13px;font-weight:800;color:var(--bad)}
+.tk .btn{min-height:58px;font-size:18px}
+.tk:not(.next){padding:10px}
+.tk:not(.next) .no{font-size:25px;min-width:40px}
+.tk:not(.next) .what{font-size:19px}
+.tk:not(.next) .meta{margin-bottom:8px}
+.tk:not(.next) .btn{min-height:46px;font-size:15px}
+.nextlb{font-size:12px;font-weight:800;color:var(--accent);margin:0 0 4px}
+.empty{text-align:center;padding:48px 16px;color:var(--sub)}
+.empty .big{font-size:52px;margin:0 0 8px}
+
+/* ===== 売上の画面 ===== */
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.kpi > div{border:2px solid var(--line);border-radius:var(--r);padding:10px 8px;text-align:center}
+.kpi .lb{font-size:11px;font-weight:800;color:var(--sub)}
+.kpi .vl{font-size:22px;font-weight:800;margin-top:2px}
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+table.t th,table.t td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+table.t th{font-size:12px;color:var(--sub)}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bars .b{display:flex;align-items:center;gap:8px;font-size:13px}
+.bars .b .hh{width:48px;flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums}
+.bars .b .tr{flex:1 1 auto;height:22px;background:var(--soft);border-radius:6px;overflow:hidden}
+.bars .b .tr i{display:block;height:100%;background:var(--accent)}
+.bars .b .vv{width:84px;flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.void{text-decoration:line-through;color:var(--sub)}
+
+/* ===== 下から出る知らせ ===== */
+#toast{
+  position:fixed;left:10px;right:10px;z-index:40;
+  bottom:calc(var(--tabs) + env(safe-area-inset-bottom) + 10px);
+  background:#101010;color:#fff;border-radius:var(--r);padding:12px 12px 8px;
+  display:none;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 8px 20px rgba(0,0,0,.3)
+}
+#toast.show{display:flex}
+#toast .t-msg{flex:1 1 auto;font-weight:800;font-size:15px}
+#toast .t-undo{
+  border:2px solid #fff;background:none;color:#fff;border-radius:10px;
+  min-height:44px;padding:4px 16px;font-weight:800;font-size:16px
+}
+#toast .t-bar{flex:1 1 100%;height:4px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden;margin-top:6px}
+#toast .t-bar i{display:block;height:100%;background:#fff;width:100%}
+
+/* ===== 重ねる画面 ===== */
+#over{position:fixed;inset:0;z-index:60;display:none;background:rgba(0,0,0,.5);
+  padding:calc(env(safe-area-inset-top) + 14px) 12px calc(env(safe-area-inset-bottom) + 14px);
+  overflow:auto;-webkit-overflow-scrolling:touch}
+#over.show{display:block}
+.sheet{background:#fff;border-radius:16px;padding:16px;max-width:520px;margin:0 auto}
+.sheet h2{margin:0 0 10px;font-size:21px;font-weight:800}
+.sheet .big{font-size:34px;font-weight:800;margin:4px 0}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.pad button{min-height:62px;font-size:26px;font-weight:800;border:2px solid var(--line);border-radius:var(--r);background:#fff}
+.padview{border:2px solid var(--line);border-radius:var(--r);padding:10px 12px;font-size:32px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header id="top"></header>
+<main id="scr"></main>
+<nav id="tabs"></nav>
+<div id="toast"></div>
+<div id="over"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   屋台にのきち レジ
+   設計メモ: docs/design.md
+
+   いちばん大事なきまり
+     1. 記録は「1行ずつ追記する」。前の行は絶対に書き換えない。
+        だから書き込みが失敗しても、最悪いま押した1件だけで止まる。
+     2. 確定を押したその瞬間に書く。あとでまとめて保存はしない。
+     3. 開いたら、操作なしで前回の続きから始まる。
+   ===================================================================== */
+
+/* ============================ 保存（追記式） ============================ */
+
+var PREFIX = 'nokichi.v1.log.';   /* 記録1行ぶんのキーの頭 */
+var DRAFTK = 'nokichi.v1.draft';  /* 入力中の注文（記録ではないので別扱い） */
+var PAD = 7;
+
+var LOG = [];          /* 記録の全行（古い順） */
+var S = null;          /* 記録から組み立てた「いまの状態」 */
+var logSeq = 0;        /* いちばん大きい行番号 */
+var saveLamp = { ok: true, at: null, msg: '' };
+
+function keyFor(n) { return PREFIX + String(n).padStart(PAD, '0'); }
+
+/* 記録を全部読む。読めない行があっても、そこだけ飛ばして他は守る。 */
+function readAll() {
+  var out = [], maxN = 0, broken = 0, k, n, v, i;
+  for (i = 0; i < localStorage.length; i++) {
+    k = localStorage.key(i);
+    if (!k || k.indexOf(PREFIX) !== 0) continue;
+    n = parseInt(k.slice(PREFIX.length), 10);
+    if (!isFinite(n)) continue;
+    if (n > maxN) maxN = n;
+    try { v = JSON.parse(localStorage.getItem(k)); } catch (e) { broken++; continue; }
+    if (v && typeof v === 'object') { v.__n = n; out.push(v); } else { broken++; }
+  }
+  out.sort(function (a, b) { return a.__n - b.__n; });
+  logSeq = maxN;
+  return { entries: out, broken: broken };
+}
+
+/* 1行だけ書く。localStorage の書き込みは「書けたか、書けなかったか」の
+   どちらかにしかならないので、前の行が壊れることがない。 */
+function append(entry, quiet) {
+  entry.at = Date.now();
+  var n = logSeq + 1;
+  try {
+    localStorage.setItem(keyFor(n), JSON.stringify(entry));
+  } catch (err) {
+    saveLamp = { ok: false, at: saveLamp.at, msg: String((err && err.name) || 'エラー') };
+    render();
+    openSaveFailed(err);
+    return false;
+  }
+  logSeq = n;
+  entry.__n = n;
+  LOG.push(entry);
+  saveLamp = { ok: true, at: Date.now(), msg: '' };
+  S = rebuild(LOG);
+  if (!quiet) render();
+  return true;
+}
+
+/* ====================== 記録から「いまの状態」を作る ====================== */
+
+function rebuild(entries) {
+  var st = {
+    event: null,
+    menu: [],
+    settings: { perGroupMin: 3, wake: true, cashCount: null },
+    tickets: [],
+    lastAt: null,
+    openN: 0
+  };
+  var map = new Map(), i, e, t;
+  for (i = 0; i < entries.length; i++) {
+    e = entries[i];
+    if (e.at) st.lastAt = e.at;
+    switch (e.t) {
+      case 'open':
+        st.event = {
+          name: e.name || '', date: e.date || '', closeAt: e.closeAt || '',
+          cashFloat: +e.cashFloat || 0, openedAt: e.at, closedAt: null
+        };
+        st.tickets = []; map.clear();
+        st.settings.cashCount = null;
+        st.openN = e.__n || 0;
+        break;
+      case 'evset':
+        if (st.event) {
+          if (e.name != null) st.event.name = e.name;
+          if (e.date != null) st.event.date = e.date;
+          if (e.closeAt != null) st.event.closeAt = e.closeAt;
+          if (e.cashFloat != null) st.event.cashFloat = +e.cashFloat || 0;
+        }
+        break;
+      case 'close': if (st.event) st.event.closedAt = e.at; break;
+      case 'menu':
+        st.menu = (e.items || []).map(function (it) {
+          return { id: it.id, name: String(it.name || ''), price: +it.price || 0, hidden: !!it.hidden };
+        });
+        break;
+      case 'set': if (e.settings) for (var k in e.settings) st.settings[k] = e.settings[k]; break;
+      case 'cash': st.settings.cashCount = (e.amount == null ? null : +e.amount); break;
+      case 'ticket':
+        t = {
+          id: e.id, seq: e.seq, lines: e.lines || [], total: +e.total || 0,
+          mark: e.mark || {}, pay: e.pay || {}, eta: +e.eta || 0,
+          status: 'wait', createdAt: e.at, handedAt: null, voidedAt: null, voidReason: ''
+        };
+        map.set(t.id, t); st.tickets.push(t);
+        break;
+      case 'hand':   t = map.get(e.id); if (t) { t.status = 'done'; t.handedAt = e.at; } break;
+      case 'unhand': t = map.get(e.id); if (t) { t.status = 'wait'; t.handedAt = null; } break;
+      case 'void':   t = map.get(e.id); if (t) { t.status = 'void'; t.voidedAt = e.at; t.voidReason = e.reason || ''; } break;
+      case 'unvoid': t = map.get(e.id); if (t) { t.status = t.handedAt ? 'done' : 'wait'; t.voidedAt = null; t.voidReason = ''; } break;
+    }
+  }
+  return st;
+}
+
+/* ============================== 小さな道具 ============================== */
+
+function h(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function yen(n) { return (Math.round(n) || 0).toLocaleString('ja-JP') + '円'; }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function hhmmss(ms) { var d = new Date(ms); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds()); }
+function hhmm(ms) { var d = new Date(ms); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function todayStr() { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function stamp() { var d = new Date(); return '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '-' + pad2(d.getHours()) + pad2(d.getMinutes()); }
+
+function elapsedText(from) {
+  var s = Math.max(0, Math.floor((Date.now() - from) / 1000));
+  var m = Math.floor(s / 60), ss = s % 60;
+  if (m >= 60) return Math.floor(m / 60) + '時間' + pad2(m % 60) + '分';
+  return m + '分' + pad2(ss) + '秒';
+}
+
+/* 見分けるための印 */
+var COLORS = [
+  { k: '黒', c: '#1a1a1a' }, { k: '白', c: '#ffffff' }, { k: '灰', c: '#9a9a9a' },
+  { k: '紺', c: '#1f3a6e' }, { k: '青', c: '#2a73c9' }, { k: '赤', c: '#cc2222' },
+  { k: '桃', c: '#e880a8' }, { k: '緑', c: '#2e8b4f' }, { k: '黄', c: '#e8c33a' },
+  { k: '茶', c: '#7a4a2a' }, { k: '紫', c: '#7b4ea8' },
+  { k: '柄', c: 'repeating-linear-gradient(135deg,#3a3a3a 0 5px,#cfcfcf 5px 10px)' }
+];
+var KINDS = ['パーカー', 'Tシャツ', 'シャツ', '上着', '帽子', 'ワンピース', '子供連れ', '2人以上'];
+
+function colorOf(k) {
+  for (var i = 0; i < COLORS.length; i++) if (COLORS[i].k === k) return COLORS[i].c;
+  return null;
+}
+function swStyle(k) {
+  var c = colorOf(k);
+  if (!c) return '';
+  return (c.indexOf('gradient') >= 0 ? 'background-image:' : 'background:') + c;
+}
+function markText(m) {
+  if (!m) return '';
+  var a = [];
+  if (m.color) a.push(m.color);
+  if (m.kind) a.push(m.kind);
+  if (m.name) a.push(m.name);
+  return a.join('・');
+}
+function markHtml(m) {
+  if (!markText(m)) return '<span class="muted">印なし</span>';
+  var s = '';
+  if (m.color) s += '<span class="sw-i" style="' + swStyle(m.color) + '"></span>';
+  var w = [];
+  if (m.color) w.push(m.color);
+  if (m.kind) w.push(m.kind);
+  if (m.name) w.push(m.name);
+  return s + '<span>' + h(w.join('・')) + '</span>';
+}
+function markSig(m) {
+  m = m || {};
+  return [m.color || '', m.kind || '', String(m.name || '').trim().replace(/\s+/g, '')].join('|');
+}
+function lineSig(lines) {
+  return (lines || []).filter(function (l) { return l.qty > 0; })
+    .map(function (l) { return l.itemId + 'x' + l.qty; }).sort().join(',');
+}
+function linesText(lines) {
+  return (lines || []).map(function (l) { return l.name + ' ×' + l.qty; }).join(' ＋ ');
+}
+
+/* ============================ 待ち時間の見当 ============================ */
+
+function waiting() {
+  return S.tickets.filter(function (t) { return t.status === 'wait'; })
+    .sort(function (a, b) { return a.createdAt - b.createdAt; });
+}
+function handedList() {
+  return S.tickets.filter(function (t) { return t.status === 'done' && t.handedAt; })
+    .sort(function (a, b) { return a.handedAt - b.handedAt; });
+}
+/* 「受け取り済み」を押した時刻から、1組あたり何秒で出せているかを拾う。
+   焼き上がりが重なって2組つづけて渡したり、お客さんが途切れたりしても
+   おかしな数字にならないように、短すぎる間隔と長すぎる間隔は数えない。 */
+function cfgSec() { return Math.max(60, (S.settings.perGroupMin || 3) * 60); }
+function perGroupSec() {
+  var hs = handedList();
+  if (hs.length < 4) return null;
+  var r = hs.slice(-7), g = [], i, d, cap = cfgSec() * 3;
+  for (i = 1; i < r.length; i++) {
+    d = (r[i].handedAt - r[i - 1].handedAt) / 1000;
+    if (d < 10) continue;            /* まとめて渡した分は数えない */
+    g.push(Math.min(d, cap));        /* お客さんが途切れた時間は数えすぎない */
+  }
+  if (g.length < 2) return null;
+  g.sort(function (a, b) { return a - b; });
+  return g[Math.floor(g.length / 2)];
+}
+function baseSec() {
+  var m = perGroupSec();
+  return m != null ? Math.max(60, m) : cfgSec();
+}
+function newOrderWaitSec() { return baseSec() * (waiting().length + 1); }
+function roundMin5(sec) { return Math.max(5, Math.ceil(sec / 60 / 5) * 5); }
+function closeLeftSec() {
+  if (!S.event || !S.event.closeAt) return null;
+  var p = String(S.event.closeAt).split(':');
+  if (p.length < 2) return null;
+  var d = new Date(); d.setHours(+p[0], +p[1], 0, 0);
+  return (d.getTime() - Date.now()) / 1000;
+}
+
+/* ============================= 入力中の注文 ============================= */
+
+var draft = { qty: {}, mark: { color: '', kind: '', name: '' }, received: null };
+
+function saveDraft() {
+  try { localStorage.setItem(DRAFTK, JSON.stringify(draft)); } catch (e) { }
+}
+function loadDraft() {
+  try {
+    var v = JSON.parse(localStorage.getItem(DRAFTK) || 'null');
+    if (v && typeof v === 'object') {
+      draft.qty = v.qty || {};
+      draft.mark = v.mark || { color: '', kind: '', name: '' };
+      draft.received = (v.received == null ? null : +v.received);
+    }
+  } catch (e) { }
+}
+function clearDraft() {
+  draft = { qty: {}, mark: { color: '', kind: '', name: '' }, received: null };
+  try { localStorage.removeItem(DRAFTK); } catch (e) { }
+}
+function draftLines() {
+  var out = [];
+  S.menu.forEach(function (it) {
+    var q = draft.qty[it.id] || 0;
+    if (q > 0) out.push({ itemId: it.id, name: it.name, price: it.price, qty: q });
+  });
+  return out;
+}
+function draftTotal() {
+  return draftLines().reduce(function (s, l) { return s + l.price * l.qty; }, 0);
+}
+/* いま作ろうとしている注文が、待っている人と見分けられなくなるか */
+function clashes() {
+  var ls = draftLines();
+  if (!ls.length) return [];
+  var a = lineSig(ls), b = markSig(draft.mark);
+  return waiting().filter(function (t) {
+    return lineSig(t.lines) === a && markSig(t.mark) === b;
+  });
+}
+function presets(total) {
+  if (total <= 0) return [];
+  var s = [total], c = [Math.ceil(total / 500) * 500, Math.ceil(total / 1000) * 1000, 2000, 3000, 5000, 10000], i;
+  for (i = 0; i < c.length; i++) if (c[i] > total && s.indexOf(c[i]) < 0) s.push(c[i]);
+  return [s[0]].concat(s.slice(1).sort(function (x, y) { return x - y; }).slice(0, 5));
+}
+
+/* ================================ 画面 ================================ */
+
+var tab = 'order';
+var $top = document.getElementById('top');
+var $scr = document.getElementById('scr');
+var $tabs = document.getElementById('tabs');
+var $toast = document.getElementById('toast');
+var $over = document.getElementById('over');
+
+function render() {
+  if (!S) return;
+  $top.innerHTML = vTop();
+  $tabs.innerHTML = vTabs();
+  var f = { order: vOrder, wait: vWait, sales: vSales, set: vSet }[tab] || vOrder;
+  $scr.innerHTML = f();
+  tick();
+}
+
+function vTop() {
+  var l = saveLamp.ok
+    ? '<div class="lamp ok"><i class="dot"></i>保存OK' + (saveLamp.at ? ' ' + hhmmss(saveLamp.at) : '') + '</div>'
+    : '<div class="lamp ng"><i class="dot"></i>保存できていません</div>';
+  var ttl = S.event
+    ? (S.event.name || '営業中') + (S.event.closedAt ? '（終了）' : '')
+    : '営業がはじまっていません';
+  return '<div class="title">' + h(ttl) + '</div>' + l;
+}
+
+function vTabs() {
+  var w = waiting().length;
+  function b(id, icon, label, badge) {
+    return '<button data-a="tab" data-v="' + id + '" aria-current="' + (tab === id) + '">'
+      + '<span class="big">' + icon + '</span><span>' + label + (badge ? ' ' + badge : '') + '</span></button>';
+  }
+  return b('order', '🧾', '注文')
+    + b('wait', '🔥', '待ち', w ? w + '組' : '')
+    + b('sales', '📊', '売上')
+    + b('set', '⚙️', '設定');
+}
+
+/* ---------------------------- 注文とお会計 ---------------------------- */
+
+function vOrder() {
+  if (!S.event || S.event.closedAt) {
+    return '<div class="empty"><div class="big">🏮</div>'
+      + '<p>まだ営業がはじまっていません。</p>'
+      + '<button class="btn main wide" data-a="openStart">今日の営業をはじめる</button></div>';
+  }
+  var ls = draftLines(), total = draftTotal(), w = waiting().length;
+  var out = '';
+
+  /* 受付をやめたほうがいい時の知らせ */
+  var left = closeLeftSec(), est = newOrderWaitSec();
+  if (left != null && left > 0 && left < est) {
+    out += '<div class="banner bad">⚠ 閉店まで約' + Math.floor(left / 60) + '分。いまの待ちは約'
+      + roundMin5(est) + '分なので、これ以上受けないほうがいいです。</div>';
+  }
+  if (!saveLamp.ok) {
+    out += '<div class="banner bad">⚠ 保存できていません。注文を受けるのをやめて、設定から書き出してください。</div>';
+  }
+
+  /* 商品 */
+  var vis = S.menu.filter(function (it) { return !it.hidden; });
+  if (!vis.length) {
+    out += '<div class="note">商品がありません。設定から商品を入れてください。</div>';
+  } else {
+    out += '<div class="items">';
+    vis.forEach(function (it) {
+      var q = draft.qty[it.id] || 0;
+      out += '<button class="item' + (q ? ' on' : '') + '" data-a="plus" data-v="' + h(it.id) + '">'
+        + '<span class="nm">' + h(it.name) + '</span>'
+        + '<span class="pr">' + yen(it.price) + '</span>'
+        + (q ? '<span class="qty">×' + q + '</span>'
+             + '<span class="minus" data-a="minus" data-v="' + h(it.id) + '">−</span>' : '')
+        + '</button>';
+    });
+    out += '</div>';
+  }
+
+  /* 合計 */
+  out += '<div class="total"><span class="lb">合計</span><span class="vl">' + yen(total) + '</span></div>';
+  if (ls.length) {
+    out += '<div class="row" style="margin:-6px 0 14px"><button class="btn sm ghost" data-a="clearItems">商品をぜんぶ消す</button></div>';
+  }
+
+  /* 見分けるための印 */
+  out += '<div class="sec"><h2>見分けるための印</h2>';
+  out += '<div class="chips">';
+  COLORS.forEach(function (c) {
+    out += '<button class="chip' + (draft.mark.color === c.k ? ' on' : '') + '" data-a="color" data-v="' + h(c.k) + '">'
+      + '<span class="sw" style="' + swStyle(c.k) + '"></span><span class="lb">' + h(c.k) + '</span></button>';
+  });
+  out += '</div>';
+  out += '<div class="row wrap" style="margin-top:8px">'
+    + '<button class="btn sm ghost" data-a="name">' + (draft.mark.name ? '名前：' + h(draft.mark.name) : '名前を打つ') + '</button>'
+    + (markText(draft.mark) ? '<button class="btn sm ghost" data-a="clearMark">印を消す</button>' : '')
+    + '</div>';
+
+  /* 見分けられなくなる時だけ、2段目を出す */
+  var cl = clashes();
+  if (cl.length) {
+    out += '<div class="banner warn" style="margin-top:10px">⚠ 同じ内容・同じ印で '
+      + cl.map(function (t) { return '⑦'.replace('⑦', '') + '' + t.seq + '番'; }).join('・')
+      + ' が待っています。見分けられません。<br>下から服のとくちょうを1つ足してください。</div>';
+    out += '<div class="kinds">';
+    KINDS.forEach(function (k) {
+      out += '<button class="kind' + (draft.mark.kind === k ? ' on' : '') + '" data-a="kind" data-v="' + h(k) + '">' + h(k) + '</button>';
+    });
+    out += '</div>';
+  } else if (draft.mark.kind) {
+    out += '<div class="row wrap" style="margin-top:8px"><div class="markview">' + markHtml(draft.mark) + '</div>'
+      + '<button class="btn sm ghost" data-a="kind" data-v="">とくちょうを外す</button></div>';
+  }
+  out += '</div>';
+
+  /* 預かりとおつり */
+  out += '<div class="sec"><h2>預かったお金</h2>';
+  if (total > 0) {
+    out += '<div class="cash">';
+    presets(total).forEach(function (v, i) {
+      out += '<button class="btn' + (draft.received === v ? ' go' : '') + '" data-a="recv" data-v="' + v + '">'
+        + (i === 0 ? 'ちょうど' : v.toLocaleString('ja-JP')) + '</button>';
+    });
+    out += '<button class="btn ghost" data-a="pad">数字で入れる</button>';
+    out += '</div>';
+    if (draft.received != null) {
+      var ch = draft.received - total;
+      out += '<div class="change' + (ch < 0 ? ' short' : '') + '">'
+        + '<span class="lb">' + (ch < 0 ? '足りません' : 'おつり') + '</span>'
+        + '<span class="vl">' + yen(Math.abs(ch)) + '</span></div>'
+        + '<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="recv" data-v="">預かりを消す</button>'
+        + '<span class="tiny">（おつりの計算がいらないときは、入れなくても確定できます）</span></div>';
+    } else {
+      out += '<div class="tiny" style="margin-top:8px">おつりの計算がいらないときは、入れなくても確定できます。</div>';
+    }
+  } else {
+    out += '<div class="muted">商品を選ぶと出ます。</div>';
+  }
+  out += '</div>';
+
+  /* 確定 */
+  var bad = (draft.received != null && draft.received < total);
+  var can = ls.length > 0 && !bad;
+  out += '<div id="confirmBar">'
+    + '<button class="btn main wide' + (can ? '' : ' off') + '" data-a="confirm">'
+    + (ls.length === 0 ? '商品を選んでください'
+      : bad ? '預かったお金が足りません'
+        : '確定　（待ち 約' + roundMin5(est) + '分）')
+    + '</button>'
+    + '<div class="tiny" style="text-align:center;margin-top:6px">いま待っている人 ' + w + '組</div>'
+    + '</div>';
+  return out;
+}
+
+/* ------------------------- 受け取り待ちの一覧 ------------------------- */
+
+function vWait() {
+  var ws = waiting();
+  if (!ws.length) {
+    return '<div class="empty"><div class="big">✅</div><p>受け取り待ちはありません。</p></div>';
+  }
+  var base = baseSec(), out = '';
+  var sigCount = {};
+  ws.forEach(function (t) {
+    var k = lineSig(t.lines) + '//' + markSig(t.mark);
+    sigCount[k] = (sigCount[k] || 0) + 1;
+  });
+
+  ws.forEach(function (t, i) {
+    var el = (Date.now() - t.createdAt) / 1000;
+    /* 注文を受けたときに「約◯分」と案内した分数と比べる。
+       実際にかかっている時間から勝手に決めると、焼き上がりが重なった
+       だけで全部が赤くなってしまうため。 */
+    var lim = t.eta || base * (i + 1);
+    var cls = 'tk' + (i === 0 ? ' next' : '');
+    if (el > lim * 1.4) cls += ' vlate'; else if (el > lim) cls += ' late';
+    var dup = sigCount[lineSig(t.lines) + '//' + markSig(t.mark)] > 1;
+
+    out += '<div class="' + cls + '" data-long="' + h(t.id) + '">';
+    if (i === 0) out += '<div class="nextlb">▼ 次に渡す</div>';
+    out += '<div class="hd"><span class="no">' + t.seq + '</span>'
+      + '<span class="what">' + h(linesText(t.lines)) + '</span>'
+      + '<span class="paid">お会計済み</span></div>';
+    out += '<div class="meta"><span class="markview">' + markHtml(t.mark) + '</span>'
+      + '<span class="el" data-since="' + t.createdAt + '">' + elapsedText(t.createdAt) + '</span>';
+    if (i > 0) out += '<span class="tiny" data-eta="' + i + '">あと約' + Math.max(1, Math.round(base * i / 60)) + '分</span>';
+    out += '</div>';
+    if (el > lim) out += '<div class="flag">⚠ 約' + Math.round(lim / 60) + '分と案内しています。声をかけてください。</div>';
+    if (dup) out += '<div class="flag">⚠ 同じ内容・同じ印の人がほかにもいます。お客さんに注文内容を言ってもらってください。</div>';
+    out += '<button class="btn go wide" data-a="hand" data-v="' + h(t.id) + '">受け取り済み</button>';
+    out += '</div>';
+  });
+  out += '<div class="tiny" style="text-align:center;padding:4px 0 10px">'
+    + 'カードを長押しすると取り消せます。渡したあと5秒は「戻す」が出ます。</div>';
+  return out;
+}
+
+/* ------------------------------ 今日の売上 ------------------------------ */
+
+function liveTickets() {
+  return S.tickets.filter(function (t) { return t.status !== 'void'; });
+}
+
+function vSales() {
+  if (!S.event) return '<div class="empty"><div class="big">📊</div><p>営業がはじまっていません。</p></div>';
+  var ts = liveTickets();
+  var sales = ts.reduce(function (s, t) { return s + t.total; }, 0);
+  var pieces = ts.reduce(function (s, t) {
+    return s + t.lines.reduce(function (a, l) { return a + l.qty; }, 0);
+  }, 0);
+  var voided = S.tickets.filter(function (t) { return t.status === 'void'; });
+  var out = '';
+
+  out += '<div class="kpi">'
+    + '<div><div class="lb">売上</div><div class="vl">' + sales.toLocaleString('ja-JP') + '</div></div>'
+    + '<div><div class="lb">お会計</div><div class="vl">' + ts.length + '件</div></div>'
+    + '<div><div class="lb">点数</div><div class="vl">' + pieces + '</div></div>'
+    + '</div>';
+
+  /* 商品ごと */
+  var per = {};
+  ts.forEach(function (t) {
+    t.lines.forEach(function (l) {
+      if (!per[l.name]) per[l.name] = { q: 0, y: 0 };
+      per[l.name].q += l.qty; per[l.name].y += l.qty * l.price;
+    });
+  });
+  var names = Object.keys(per);
+  out += '<div class="sec"><h2>商品ごと</h2>';
+  if (!names.length) out += '<div class="muted">まだ売れていません。</div>';
+  else {
+    out += '<table class="t"><tr><th>商品</th><th class="n">点数</th><th class="n">金額</th></tr>';
+    names.forEach(function (n) {
+      out += '<tr><td>' + h(n) + '</td><td class="n">' + per[n].q + '</td><td class="n">' + yen(per[n].y) + '</td></tr>';
+    });
+    out += '</table>';
+  }
+  out += '</div>';
+
+  /* 時間帯 */
+  out += '<div class="sec"><h2>時間帯ごと</h2>';
+  var byH = {}, hs = [];
+  ts.forEach(function (t) {
+    var hh = new Date(t.createdAt).getHours();
+    if (!byH[hh]) { byH[hh] = { y: 0, c: 0 }; hs.push(hh); }
+    byH[hh].y += t.total; byH[hh].c++;
+  });
+  hs.sort(function (a, b) { return a - b; });
+  if (!hs.length) out += '<div class="muted">まだ売れていません。</div>';
+  else {
+    var mx = Math.max.apply(null, hs.map(function (x) { return byH[x].y; }));
+    out += '<div class="bars">';
+    hs.forEach(function (x) {
+      out += '<div class="b"><span class="hh">' + pad2(x) + '時</span>'
+        + '<span class="tr"><i style="width:' + Math.round(byH[x].y / mx * 100) + '%"></i></span>'
+        + '<span class="vv">' + byH[x].y.toLocaleString('ja-JP') + '<span class="tiny"> / ' + byH[x].c + '件</span></span></div>';
+    });
+    out += '</div>';
+  }
+  out += '</div>';
+
+  /* レジのお金 */
+  var expect = (S.event.cashFloat || 0) + sales;
+  out += '<div class="sec"><h2>レジのお金があっているか</h2><div class="card">';
+  out += '<table class="t">'
+    + '<tr><td>はじめに入れたおつり用</td><td class="n">' + yen(S.event.cashFloat || 0) + '</td></tr>'
+    + '<tr><td>売上（ぜんぶ現金）</td><td class="n">' + yen(sales) + '</td></tr>'
+    + '<tr><td><b>レジにあるはずの金額</b></td><td class="n"><b>' + yen(expect) + '</b></td></tr>'
+    + '</table>';
+  out += '<label class="fld" style="margin-top:10px"><span>かぞえた実際の金額</span>'
+    + '<input type="number" inputmode="numeric" id="cashCount" value="'
+    + (S.settings.cashCount == null ? '' : S.settings.cashCount) + '" placeholder="例 48600"></label>';
+  out += '<button class="btn wide" data-a="saveCash">この金額で記録する</button>';
+  if (S.settings.cashCount != null) {
+    var dif = S.settings.cashCount - expect;
+    out += '<div class="banner ' + (dif === 0 ? 'ok' : 'warn') + '" style="margin-top:10px">'
+      + (dif === 0 ? '✅ ぴったり合っています' : (dif > 0 ? '＋' : '−') + yen(Math.abs(dif)) + ' ずれています')
+      + '</div>';
+  }
+  out += '</div></div>';
+
+  /* 全チケット */
+  out += '<div class="sec"><h2>今日のチケット（新しい順）</h2>';
+  var all = S.tickets.slice().sort(function (a, b) { return b.createdAt - a.createdAt; });
+  if (!all.length) out += '<div class="muted">まだありません。</div>';
+  else {
+    out += '<table class="t"><tr><th>番号</th><th>内容</th><th>印</th><th class="n">金額</th><th>状態</th></tr>';
+    all.forEach(function (t) {
+      var st = t.status === 'void' ? '取消' : (t.status === 'done' ? '渡した ' + hhmm(t.handedAt) : '待ち');
+      out += '<tr class="' + (t.status === 'void' ? 'void' : '') + '">'
+        + '<td>' + t.seq + '</td><td>' + h(linesText(t.lines)) + '</td>'
+        + '<td>' + h(markText(t.mark) || '—') + '</td>'
+        + '<td class="n">' + yen(t.total) + '</td><td>' + h(st) + '</td></tr>';
+    });
+    out += '</table>';
+  }
+  if (voided.length) out += '<div class="tiny" style="margin-top:6px">取り消しは ' + voided.length + ' 件。記録は消していません。</div>';
+  out += '</div>';
+  return out;
+}
+
+/* -------------------------------- 設定 -------------------------------- */
+
+function storageBytes() {
+  var b = 0, k, i;
+  for (i = 0; i < localStorage.length; i++) {
+    k = localStorage.key(i);
+    if (!k || k.indexOf(PREFIX) !== 0) continue;
+    b += (k.length + (localStorage.getItem(k) || '').length) * 2;
+  }
+  return b;
+}
+
+function vSet() {
+  var out = '';
+
+  /* 保存の状態 */
+  out += '<div class="sec"><h2>保存の状態</h2><div class="card">';
+  out += '<div class="' + (saveLamp.ok ? 'banner ok' : 'banner bad') + '">'
+    + (saveLamp.ok ? '✅ ちゃんと保存できています' : '⚠ 保存できていません（' + h(saveLamp.msg) + '）') + '</div>';
+  out += '<table class="t">'
+    + '<tr><td>記録してある行数</td><td class="n">' + LOG.length + '行</td></tr>'
+    + '<tr><td>最後に書いた時刻</td><td class="n">' + (S.lastAt ? hhmmss(S.lastAt) : '—') + '</td></tr>'
+    + '<tr><td>使っている容量</td><td class="n">' + Math.round(storageBytes() / 1024) + ' KB</td></tr>'
+    + '</table>';
+  out += '<div class="note" style="margin-top:10px">下のボタンを押すと、わざと画面を読み込み直します。'
+    + '受け取り待ちがちゃんと戻ってくるかを、自分の目で確かめられます。<b>本番の前に1回ためしてください。</b></div>';
+  out += '<button class="btn wide" style="margin-top:10px" data-a="reloadTest">いますぐ試す（読み込み直す）</button>';
+  out += '</div></div>';
+
+  /* 営業 */
+  out += '<div class="sec"><h2>今日の営業</h2><div class="card">';
+  if (!S.event) {
+    out += '<button class="btn main wide" data-a="openStart">営業をはじめる</button>';
+  } else {
+    out += '<label class="fld"><span>イベント名・場所</span><input type="text" id="evName" value="' + h(S.event.name) + '" placeholder="例 〇〇祭り"></label>';
+    out += '<label class="fld"><span>日付</span><input type="date" id="evDate" value="' + h(S.event.date) + '"></label>';
+    out += '<label class="fld"><span>閉店の予定時刻（入れると「もう受けないほうがいい」を出せます）</span>'
+      + '<input type="time" id="evClose" value="' + h(S.event.closeAt) + '"></label>';
+    out += '<label class="fld"><span>はじめにレジへ入れたおつり用のお金</span>'
+      + '<input type="number" inputmode="numeric" id="evFloat" value="' + (S.event.cashFloat || 0) + '"></label>';
+    out += '<button class="btn wide" data-a="saveEvent">この内容で保存する</button>';
+    out += '<hr class="hr">';
+    if (S.event.closedAt) {
+      out += '<div class="banner ok">この営業は ' + hhmm(S.event.closedAt) + ' に終了しています。</div>'
+        + '<button class="btn main wide" data-a="openStart">新しい営業をはじめる</button>';
+    } else {
+      out += '<button class="btn wide danger" data-a="closeEvent">営業を終える（書き出しもします）</button>';
+    }
+  }
+  out += '</div></div>';
+
+  /* 商品 */
+  out += '<div class="sec"><h2>商品（3品まで）</h2><div class="card">';
+  if (!S.menu.length) out += '<div class="muted">商品がありません。</div>';
+  S.menu.forEach(function (it, i) {
+    out += '<div class="card" style="margin-bottom:10px">'
+      + '<label class="fld"><span>名前</span><input type="text" data-m="name" data-i="' + i + '" value="' + h(it.name) + '"></label>'
+      + '<label class="fld"><span>値段（税込）</span><input type="number" inputmode="numeric" data-m="price" data-i="' + i + '" value="' + it.price + '"></label>'
+      + '<div class="row wrap">'
+      + '<button class="btn sm ' + (it.hidden ? '' : 'go') + '" data-a="toggleHide" data-v="' + i + '">'
+      + (it.hidden ? '隠している' : '出している') + '</button>'
+      + '<button class="btn sm danger" data-a="delItem" data-v="' + i + '">消す</button>'
+      + '</div></div>';
+  });
+  if (S.menu.length < 3) out += '<button class="btn wide ghost" data-a="addItem">商品を足す</button>';
+  out += '<button class="btn main wide" style="margin-top:10px" data-a="saveMenu">商品の内容を保存する</button>';
+  out += '<div class="tiny" style="margin-top:8px">値段を変えても、すでに売れた分の記録は変わりません。</div>';
+  out += '</div></div>';
+
+  /* 使い勝手 */
+  out += '<div class="sec"><h2>使い勝手</h2><div class="card">';
+  out += '<div class="row"><div class="grow"><b>画面を消さない</b><div class="tiny">使っているあいだ、画面が暗くならないようにします（機種によっては効きません）。</div></div>'
+    + '<button class="btn sm ' + (S.settings.wake ? 'go' : '') + '" data-a="toggleWake">' + (S.settings.wake ? 'する' : 'しない') + '</button></div>';
+  out += '<hr class="hr">';
+  out += '<label class="fld"><span>1組あたりの目安（分）　※実際に渡した時間から自動で直していくので、はじめの目安だけ</span>'
+    + '<input type="number" inputmode="numeric" id="pgm" value="' + (S.settings.perGroupMin || 3) + '"></label>';
+  out += '<button class="btn wide" data-a="savePgm">保存する</button>';
+  var pg = perGroupSec();
+  out += '<div class="tiny" style="margin-top:8px">いま実際にかかっている時間：'
+    + (pg == null ? 'まだ分かりません（4組渡すと分かります）' : Math.round(pg / 60 * 10) / 10 + '分／組') + '</div>';
+  out += '</div></div>';
+
+  /* データ */
+  out += '<div class="sec"><h2>データの書き出しと読み込み</h2><div class="card">';
+  out += '<div class="note">スマホの中のデータが消えてしまう場合に備えます。'
+    + '<b>営業のあとは必ず書き出してください。</b>混む前に1回やっておくと、もっと安心です。</div>';
+  out += '<button class="btn main wide" style="margin-top:10px" data-a="expJson">記録を書き出す（戻せる形）</button>';
+  out += '<button class="btn wide ghost" style="margin-top:8px" data-a="expCsv">売上を書き出す（表の形）</button>';
+  out += '<button class="btn wide ghost" style="margin-top:8px" data-a="showJson">画面に出してコピーする</button>';
+  out += '<hr class="hr">';
+  out += '<button class="btn wide" data-a="impFile">書き出したファイルから戻す</button>';
+  out += '<button class="btn wide ghost" style="margin-top:8px" data-a="impPaste">貼り付けて戻す</button>';
+  out += '<div class="tiny" style="margin-top:8px">戻すときは、いまの記録を先に自動で書き出してから置きかえます。</div>';
+  out += '</div></div>';
+
+  /* 片付け */
+  out += '<div class="sec"><h2>片付け</h2><div class="card">';
+  out += '<button class="btn wide ghost" data-a="tidy">前の営業までの記録を整理する</button>';
+  out += '<div class="tiny" style="margin:8px 0 0">先に書き出してから、いまの営業より前の記録を消します。容量が足りなくなったときに使います。</div>';
+  out += '<hr class="hr">';
+  out += '<button class="btn wide danger" data-a="wipe">記録をぜんぶ消す</button>';
+  out += '<div class="tiny" style="margin-top:8px">戻せません。ふだんは使いません。</div>';
+  out += '</div></div>';
+
+  /* 注意 */
+  out += '<div class="sec"><h2>気をつけること</h2><div class="card"><ul style="margin:0;padding-left:1.2em">'
+    + '<li>モバイルバッテリーを必ず持ち、つなぎながら使う</li>'
+    + '<li><b>ホーム画面のアイコンから開く。</b>ブラウザのタブからは開かない</li>'
+    + '<li><b>シークレットモードでは絶対に使わない</b>（閉じるとぜんぶ消えます）</li>'
+    + '<li>使う端末は1台に決める</li>'
+    + '<li>長く使わないと、スマホがデータを消すことがあります（iPhoneは7日）。書き出しておけば戻せます</li>'
+    + '</ul></div></div>';
+  out += '<div class="tiny" style="text-align:center;padding:0 0 10px">屋台にのきち レジ・v1</div>';
+  return out;
+}
+
+/* ===================== 1秒ごとに時間だけ書きかえる ===================== */
+
+function tick() {
+  var base = baseSec();
+  document.querySelectorAll('[data-since]').forEach(function (el) {
+    el.textContent = elapsedText(+el.dataset.since);
+  });
+  document.querySelectorAll('[data-eta]').forEach(function (el) {
+    el.textContent = 'あと約' + Math.max(1, Math.round(base * (+el.dataset.eta) / 60)) + '分';
+  });
+  var lamp = $top.querySelector('.lamp.ok');
+  if (lamp && saveLamp.at) lamp.innerHTML = '<i class="dot"></i>保存OK ' + hhmmss(saveLamp.at);
+}
+setInterval(tick, 1000);
+
+/* ============================== 重ねる画面 ============================== */
+
+var overStack = [];
+function openOver(html) {
+  overStack.push(html);
+  $over.innerHTML = '<div class="sheet">' + html + '</div>';
+  $over.className = 'show';
+  $over.scrollTop = 0;
+}
+function closeOver() { overStack = []; $over.className = ''; $over.innerHTML = ''; }
+
+function openStart() {
+  var e = S.event;
+  var warn = (e && !e.closedAt && e.date && e.date !== todayStr())
+    ? '<div class="banner warn">前の営業（' + h(e.date) + '）が終わっていません。新しくはじめると、待ちの一覧はいったん空になります。前の記録は消えません。</div>'
+    : '';
+  openOver('<h2>営業をはじめる</h2>' + warn
+    + '<label class="fld"><span>イベント名・場所</span><input type="text" id="sName" placeholder="例 〇〇祭り" value="' + h(e ? e.name : '') + '"></label>'
+    + '<label class="fld"><span>日付</span><input type="date" id="sDate" value="' + todayStr() + '"></label>'
+    + '<label class="fld"><span>閉店の予定時刻（なくてもよい）</span><input type="time" id="sClose" value="' + h(e ? e.closeAt : '') + '"></label>'
+    + '<label class="fld"><span>はじめにレジへ入れたおつり用のお金</span><input type="number" inputmode="numeric" id="sFloat" value="' + (e ? e.cashFloat : 0) + '"></label>'
+    + '<button class="btn main wide" data-a="doStart">はじめる</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">やめる</button>');
+}
+
+function openResume() {
+  var ws = waiting();
+  openOver('<h2>前回の続きから復帰しました</h2>'
+    + '<div class="banner ok">記録はぜんぶ無事です。</div>'
+    + '<div class="big">受け取り待ち　' + ws.length + '組</div>'
+    + '<div class="muted">最後の記録　' + (S.lastAt ? hhmmss(S.lastAt) : '—') + '</div>'
+    + '<button class="btn main wide" style="margin-top:14px" data-a="resumeWait">このまま続ける</button>');
+}
+
+function openSaveFailed(err) {
+  openOver('<h2 style="color:#c20d0d">⚠ 保存できませんでした</h2>'
+    + '<div class="banner bad">いま押した1件が記録できていません。<b>これ以上の注文を受けるのをやめて、すぐに書き出してください。</b>'
+    + 'それより前の記録は無事です。</div>'
+    + '<div class="muted">' + h(String((err && err.name) || '') + ' ' + String((err && err.message) || '')) + '</div>'
+    + '<button class="btn main wide" style="margin-top:12px" data-a="expJson">いますぐ書き出す</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="tidy">前の営業までの記録を整理する</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">閉じる</button>');
+}
+
+function openBroken(n) {
+  openOver('<h2>読めない記録がありました</h2>'
+    + '<div class="banner warn">' + n + '行だけ読めませんでした。<b>それ以外はぜんぶ無事です。</b><br>'
+    + '追記していく作りなので、こわれるのはその行だけで止まります。</div>'
+    + '<div class="muted">受け取り待ち ' + waiting().length + '組 として復帰します。'
+    + '見おぼえのない数なら、設定から書き出したファイルで戻してください。</div>'
+    + '<button class="btn main wide" style="margin-top:12px" data-a="resumeWait">続ける</button>');
+}
+
+/* テンキー */
+var padBuf = '';
+function openPad() {
+  padBuf = '';
+  var g = '';
+  ['7', '8', '9', '4', '5', '6', '1', '2', '3', '00', '0', '←'].forEach(function (k) {
+    g += '<button data-a="padKey" data-v="' + k + '">' + k + '</button>';
+  });
+  openOver('<h2>預かったお金</h2>'
+    + '<div class="muted">合計 ' + yen(draftTotal()) + '</div>'
+    + '<div class="padview" id="padview">0</div>'
+    + '<div class="pad">' + g + '</div>'
+    + '<button class="btn main wide" data-a="padOk">これで決定</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">やめる</button>');
+}
+function padDraw() {
+  var el = document.getElementById('padview');
+  if (el) el.textContent = (padBuf === '' ? '0' : (+padBuf).toLocaleString('ja-JP'));
+}
+
+/* 名前 */
+function openName() {
+  openOver('<h2>名前を打つ</h2>'
+    + '<div class="muted">色のボタンでも見分けられます。名前のほうがよいときだけ使ってください。</div>'
+    + '<label class="fld" style="margin-top:10px"><span>お客さんの名前（カタカナでも漢字でも）</span>'
+    + '<input type="text" id="nmInput" value="' + h(draft.mark.name) + '" placeholder="例 ヤマダ"></label>'
+    + '<button class="btn main wide" data-a="nameOk">決定</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="nameClear">名前を消す</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">やめる</button>');
+  setTimeout(function () { var el = document.getElementById('nmInput'); if (el) { el.focus(); el.select(); } }, 60);
+}
+
+/* 取り消し */
+function openVoid(id) {
+  var t = S.tickets.filter(function (x) { return x.id === id; })[0];
+  if (!t) return;
+  openOver('<h2>' + t.seq + '番を取り消す</h2>'
+    + '<div class="muted">' + h(linesText(t.lines)) + '　' + yen(t.total) + '　' + h(markText(t.mark) || '印なし') + '</div>'
+    + '<div class="note" style="margin:10px 0">記録は消えません。「取り消した」という印をつけるだけです。'
+    + 'お金を返した場合は、レジのお金の確認でずれが出ないように、必ずここから取り消してください。</div>'
+    + '<button class="btn wide danger" data-a="doVoid" data-v="' + h(id) + '|お客様が帰った">お客さんが帰ってしまった</button>'
+    + '<button class="btn wide danger" style="margin-top:8px" data-a="doVoid" data-v="' + h(id) + '|入力の間違い">入れ方を間違えた</button>'
+    + '<button class="btn wide danger" style="margin-top:8px" data-a="doVoid" data-v="' + h(id) + '|返金">お金を返した</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">やめる</button>');
+}
+
+/* 書き出した中身を画面に出す */
+function openText(title, text, note) {
+  openOver('<h2>' + h(title) + '</h2>'
+    + (note ? '<div class="note">' + note + '</div>' : '')
+    + '<textarea id="txt" readonly>' + h(text) + '</textarea>'
+    + '<button class="btn main wide" style="margin-top:8px" data-a="copyTxt">ぜんぶコピーする</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">閉じる</button>');
+}
+function openPaste() {
+  openOver('<h2>貼り付けて戻す</h2>'
+    + '<div class="note">書き出したときの中身を、ここに貼り付けてください。</div>'
+    + '<textarea id="pst" placeholder="ここに貼り付け"></textarea>'
+    + '<button class="btn main wide" style="margin-top:8px" data-a="pasteOk">この内容で戻す</button>'
+    + '<button class="btn wide ghost" style="margin-top:8px" data-a="closeOver">やめる</button>');
+}
+
+/* ============================ 下から出る知らせ ============================ */
+
+var toastT = null, undoFn = null;
+function toast(msg, fn) {
+  clearTimeout(toastT);
+  undoFn = fn || null;
+  $toast.innerHTML = '<div class="t-msg">' + h(msg) + '</div>'
+    + (fn ? '<button class="t-undo" data-a="undo">戻す</button>' : '')
+    + '<div class="t-bar"><i></i></div>';
+  $toast.className = 'show';
+  var bar = $toast.querySelector('.t-bar i');
+  if (bar) {
+    bar.style.transition = 'none'; bar.style.width = '100%';
+    requestAnimationFrame(function () {
+      bar.style.transition = 'width 5s linear'; bar.style.width = '0%';
+    });
+  }
+  toastT = setTimeout(hideToast, 5000);
+}
+function hideToast() { clearTimeout(toastT); $toast.className = ''; $toast.innerHTML = ''; undoFn = null; }
+
+/* ============================ 書き出し・読み込み ============================ */
+
+function dl(name, text, type) {
+  try {
+    var b = new Blob([text], { type: type || 'text/plain;charset=utf-8' });
+    var u = URL.createObjectURL(b);
+    var a = document.createElement('a');
+    a.href = u; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    return true;
+  } catch (e) { return false; }
+}
+function jsonText() {
+  return JSON.stringify({
+    app: 'nokichi', version: 1, exportedAt: new Date().toISOString(),
+    log: LOG.map(function (e) { var c = {}; for (var k in e) if (k !== '__n') c[k] = e[k]; return c; })
+  });
+}
+function expJson(prefix) {
+  var n = (prefix || 'にのきち-記録-') + stamp() + '.json';
+  if (!dl(n, jsonText(), 'application/json')) {
+    openText('書き出し', jsonText(), 'ファイルにできなかったので、画面に出しました。コピーしてメモやメールに貼って保管してください。');
+  } else toast('書き出しました：' + n);
+}
+function csvText() {
+  var rows = [['番号', '受付時刻', '渡した時刻', '状態', '内容', '合計', '預かり', 'おつり', '見分ける印', '取り消し理由']];
+  S.tickets.slice().sort(function (a, b) { return a.createdAt - b.createdAt; }).forEach(function (t) {
+    rows.push([
+      t.seq, hhmmss(t.createdAt), t.handedAt ? hhmmss(t.handedAt) : '',
+      t.status === 'void' ? '取消' : (t.status === 'done' ? '渡した' : '待ち'),
+      linesText(t.lines), t.total,
+      t.pay && t.pay.received != null ? t.pay.received : '',
+      t.pay && t.pay.received != null ? (t.pay.received - t.total) : '',
+      markText(t.mark), t.voidReason || ''
+    ]);
+  });
+  return '﻿' + rows.map(function (r) {
+    return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+  }).join('\r\n');
+}
+function expCsv() {
+  var n = 'にのきち-売上-' + stamp() + '.csv';
+  if (!dl(n, csvText(), 'text/csv;charset=utf-8')) openText('売上（表の形）', csvText(), 'ファイルにできなかったので、画面に出しました。');
+  else toast('書き出しました：' + n);
+}
+function doImport(text) {
+  var data, ents;
+  try { data = JSON.parse(text); } catch (e) {
+    alert('読み込めませんでした。中身が壊れているかもしれません。'); return;
+  }
+  ents = Array.isArray(data) ? data : (data && Array.isArray(data.log) ? data.log : null);
+  if (!ents || !ents.length) { alert('このファイルには記録が入っていません。'); return; }
+  if (!confirm('いまの記録（' + LOG.length + '行）を、読み込んだ記録（' + ents.length + '行）で置きかえます。\n'
+    + 'いまの記録は、このあと自動で書き出します。\n続けますか？')) return;
+  expJson('にのきち-置きかえ前-');
+  var keys = [], i, k;
+  for (i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k && k.indexOf(PREFIX) === 0) keys.push(k); }
+  keys.forEach(function (x) { try { localStorage.removeItem(x); } catch (e) { } });
+  var n = 0, bad = 0;
+  ents.forEach(function (e) {
+    n++;
+    var c = {}; for (var kk in e) if (kk !== '__n') c[kk] = e[kk];
+    try { localStorage.setItem(keyFor(n), JSON.stringify(c)); } catch (err) { bad++; }
+  });
+  alert('戻しました。' + (bad ? '（' + bad + '行は入りませんでした）' : '') + '\n画面を読み込み直します。');
+  location.reload();
+}
+
+/* ================================ 操作 ================================ */
+
+function act(a, v, el) {
+  switch (a) {
+
+    /* --- 画面の切りかえ --- */
+    case 'tab': tab = v; render(); window.scrollTo(0, 0); return;
+    case 'closeOver': closeOver(); return;
+    case 'resumeWait': closeOver(); tab = 'wait'; render(); return;
+    case 'openStart': closeOver(); openStart(); return;
+
+    /* --- 商品 --- */
+    case 'plus':
+      draft.qty[v] = (draft.qty[v] || 0) + 1; saveDraft(); render(); return;
+    case 'minus':
+      draft.qty[v] = Math.max(0, (draft.qty[v] || 0) - 1);
+      if (!draft.qty[v]) delete draft.qty[v];
+      saveDraft(); render(); return;
+    case 'clearItems':
+      draft.qty = {}; draft.received = null; saveDraft(); render(); return;
+
+    /* --- 見分ける印 --- */
+    case 'color':
+      draft.mark.color = (draft.mark.color === v ? '' : v); saveDraft(); render(); return;
+    case 'kind':
+      draft.mark.kind = (draft.mark.kind === v ? '' : v); saveDraft(); render(); return;
+    case 'clearMark':
+      draft.mark = { color: '', kind: '', name: '' }; saveDraft(); render(); return;
+    case 'name': openName(); return;
+    case 'nameOk': {
+      var el2 = document.getElementById('nmInput');
+      draft.mark.name = el2 ? el2.value.trim().slice(0, 12) : '';
+      saveDraft(); closeOver(); render(); return;
+    }
+    case 'nameClear': draft.mark.name = ''; saveDraft(); closeOver(); render(); return;
+
+    /* --- 預かり --- */
+    case 'recv':
+      draft.received = (v === '' ? null : +v); saveDraft(); render(); return;
+    case 'pad': openPad(); return;
+    case 'padKey':
+      if (v === '←') padBuf = padBuf.slice(0, -1);
+      else if (padBuf.length < 7) padBuf += v;
+      padDraw(); return;
+    case 'padOk':
+      draft.received = (padBuf === '' ? null : +padBuf);
+      saveDraft(); closeOver(); render(); return;
+
+    /* --- 確定 --- */
+    case 'confirm': confirmOrder(); return;
+
+    /* --- 渡す・取り消す・戻す --- */
+    case 'hand': {
+      var t = S.tickets.filter(function (x) { return x.id === v; })[0];
+      if (!t || t.status !== 'wait') return;
+      if (append({ t: 'hand', id: v })) {
+        toast(t.seq + '番を渡しました', function () { append({ t: 'unhand', id: v }); });
+      }
+      return;
+    }
+    case 'doVoid': {
+      var sp = String(v).split('|'), id = sp[0], rs = sp[1] || '';
+      closeOver();
+      var tv = S.tickets.filter(function (x) { return x.id === id; })[0];
+      if (append({ t: 'void', id: id, reason: rs })) {
+        toast((tv ? tv.seq + '番' : '') + 'を取り消しました', function () { append({ t: 'unvoid', id: id }); });
+      }
+      return;
+    }
+    case 'undo': {
+      var f = undoFn; hideToast();
+      if (f) f();
+      return;
+    }
+
+    /* --- 営業 --- */
+    case 'doStart': {
+      var nm = (document.getElementById('sName') || {}).value || '';
+      var dt = (document.getElementById('sDate') || {}).value || todayStr();
+      var cl = (document.getElementById('sClose') || {}).value || '';
+      var fl = +((document.getElementById('sFloat') || {}).value || 0);
+      closeOver();
+      append({ t: 'open', name: nm, date: dt, closeAt: cl, cashFloat: fl });
+      clearDraft();
+      tab = 'order'; render();
+      toast('営業をはじめました');
+      return;
+    }
+    case 'saveEvent': {
+      append({
+        t: 'evset',
+        name: (document.getElementById('evName') || {}).value || '',
+        date: (document.getElementById('evDate') || {}).value || '',
+        closeAt: (document.getElementById('evClose') || {}).value || '',
+        cashFloat: +((document.getElementById('evFloat') || {}).value || 0)
+      });
+      toast('保存しました');
+      return;
+    }
+    case 'closeEvent':
+      if (!confirm('営業を終えます。先に記録を書き出します。よろしいですか？')) return;
+      expJson();
+      append({ t: 'close' });
+      tab = 'sales'; render();
+      toast('営業を終えました');
+      return;
+
+    /* --- 商品の編集 --- */
+    case 'addItem': {
+      var m = readMenuInputs();
+      m.push({ id: 'i' + uid(), name: '', price: 0, hidden: false });
+      append({ t: 'menu', items: m });
+      return;
+    }
+    case 'delItem': {
+      var m2 = readMenuInputs();
+      if (!confirm('「' + (m2[+v] && m2[+v].name || '') + '」を消します。すでに売れた分の記録は消えません。')) return;
+      m2.splice(+v, 1);
+      append({ t: 'menu', items: m2 });
+      return;
+    }
+    case 'toggleHide': {
+      var m3 = readMenuInputs();
+      if (m3[+v]) m3[+v].hidden = !m3[+v].hidden;
+      append({ t: 'menu', items: m3 });
+      return;
+    }
+    case 'saveMenu':
+      append({ t: 'menu', items: readMenuInputs() });
+      toast('商品を保存しました');
+      return;
+
+    /* --- 使い勝手 --- */
+    case 'toggleWake':
+      append({ t: 'set', settings: { wake: !S.settings.wake } });
+      reqWake();
+      return;
+    case 'savePgm': {
+      var p = +((document.getElementById('pgm') || {}).value || 3);
+      append({ t: 'set', settings: { perGroupMin: Math.max(1, Math.min(60, p)) } });
+      toast('保存しました');
+      return;
+    }
+    case 'saveCash': {
+      var c = (document.getElementById('cashCount') || {}).value;
+      append({ t: 'cash', amount: (c === '' ? null : +c) });
+      toast('記録しました');
+      return;
+    }
+
+    /* --- データ --- */
+    case 'expJson': expJson(); return;
+    case 'expCsv': expCsv(); return;
+    case 'showJson': openText('記録の中身', jsonText(), 'これをコピーして、メモやメールに貼っておけば、あとから戻せます。'); return;
+    case 'copyTxt': {
+      var ta = document.getElementById('txt');
+      if (!ta) return;
+      ta.removeAttribute('readonly'); ta.select(); ta.setSelectionRange(0, 999999);
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { }
+      if (navigator.clipboard) { navigator.clipboard.writeText(ta.value).catch(function () { }); ok = true; }
+      ta.setAttribute('readonly', 'readonly');
+      toast(ok ? 'コピーしました' : '長押しして選んでコピーしてください');
+      return;
+    }
+    case 'impFile': {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'application/json,.json,.txt';
+      inp.onchange = function () {
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        var fr = new FileReader();
+        fr.onload = function () { doImport(String(fr.result || '')); };
+        fr.onerror = function () { alert('ファイルを読めませんでした。'); };
+        fr.readAsText(f);
+      };
+      inp.click();
+      return;
+    }
+    case 'impPaste': openPaste(); return;
+    case 'pasteOk': {
+      var pv = (document.getElementById('pst') || {}).value || '';
+      if (!pv.trim()) { alert('中身が空です。'); return; }
+      doImport(pv);
+      return;
+    }
+
+    /* --- 片付け --- */
+    case 'tidy': {
+      if (!S.openN) { alert('整理できる古い記録はありません。'); return; }
+      if (!confirm('先に書き出してから、いまの営業より前の記録を消します。よろしいですか？')) return;
+      expJson('にのきち-整理前-');
+      var del = [], i2, k2;
+      for (i2 = 0; i2 < localStorage.length; i2++) {
+        k2 = localStorage.key(i2);
+        if (k2 && k2.indexOf(PREFIX) === 0 && parseInt(k2.slice(PREFIX.length), 10) < S.openN) del.push(k2);
+      }
+      del.forEach(function (x) { try { localStorage.removeItem(x); } catch (e) { } });
+      alert(del.length + '行を整理しました。画面を読み込み直します。');
+      location.reload();
+      return;
+    }
+    case 'wipe':
+      if (!confirm('記録をぜんぶ消します。戻せません。よろしいですか？')) return;
+      if (!confirm('本当に消しますか？　先に「記録を書き出す」をしておくことをおすすめします。')) return;
+      var all = [], i3, k3;
+      for (i3 = 0; i3 < localStorage.length; i3++) {
+        k3 = localStorage.key(i3);
+        if (k3 && (k3.indexOf(PREFIX) === 0 || k3 === DRAFTK)) all.push(k3);
+      }
+      all.forEach(function (x) { try { localStorage.removeItem(x); } catch (e) { } });
+      location.reload();
+      return;
+
+    case 'reloadTest': location.reload(); return;
+  }
+}
+
+function readMenuInputs() {
+  var m = S.menu.map(function (it) { return { id: it.id, name: it.name, price: it.price, hidden: it.hidden }; });
+  document.querySelectorAll('[data-m]').forEach(function (el) {
+    var i = +el.dataset.i;
+    if (!m[i]) return;
+    if (el.dataset.m === 'name') m[i].name = el.value.trim().slice(0, 16);
+    if (el.dataset.m === 'price') m[i].price = Math.max(0, Math.round(+el.value || 0));
+  });
+  return m.filter(function (x) { return true; });
+}
+
+function confirmOrder() {
+  var ls = draftLines(), total = draftTotal();
+  if (!ls.length) return;
+  if (draft.received != null && draft.received < total) return;
+  var seq = S.tickets.reduce(function (m, t) { return Math.max(m, t.seq || 0); }, 0) + 1;
+  var id = uid();
+  var pay = (draft.received == null)
+    ? { received: null, change: null, skipped: true }
+    : { received: draft.received, change: draft.received - total, skipped: false };
+  var ok = append({
+    t: 'ticket', id: id, seq: seq, lines: ls, total: total,
+    mark: { color: draft.mark.color, kind: draft.mark.kind, name: draft.mark.name }, pay: pay,
+    eta: Math.round(roundMin5(newOrderWaitSec()) * 60)
+  });
+  if (!ok) return;
+  clearDraft();
+  render();
+  toast(seq + '番のチケットを作りました（待ち ' + waiting().length + '組）', function () {
+    append({ t: 'void', id: id, reason: 'すぐ取り消し' });
+  });
+}
+
+/* ============================== 入力の受付 ============================== */
+
+document.addEventListener('click', function (ev) {
+  var el = ev.target.closest('[data-a]');
+  if (!el) return;
+  if (el.classList.contains('off')) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  act(el.dataset.a, el.dataset.v, el);
+}, false);
+
+/* カードの長押しで取り消し */
+var lpT = null;
+document.addEventListener('pointerdown', function (ev) {
+  var el = ev.target.closest('[data-long]');
+  if (!el || ev.target.closest('[data-a]')) return;
+  var id = el.dataset.long;
+  lpT = setTimeout(function () { lpT = null; openVoid(id); }, 600);
+}, { passive: true });
+['pointerup', 'pointercancel', 'pointermove', 'scroll'].forEach(function (t) {
+  document.addEventListener(t, function () { if (lpT) { clearTimeout(lpT); lpT = null; } }, { passive: true });
+});
+
+/* 重ねる画面の外側を押したら閉じる（復帰の知らせなど大事なものは閉じない） */
+$over.addEventListener('click', function (ev) { if (ev.target === $over) closeOver(); });
+
+/* ========================= 画面を消さないようにする ========================= */
+
+var wl = null;
+function reqWake() {
+  try {
+    if (!S || !S.settings.wake) { if (wl) { wl.release(); wl = null; } return; }
+    if (!('wakeLock' in navigator)) return;
+    if (wl) return;
+    navigator.wakeLock.request('screen').then(function (s) {
+      wl = s;
+      s.addEventListener('release', function () { wl = null; });
+    }).catch(function () { });
+  } catch (e) { }
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') { reqWake(); render(); }
+});
+
+/* ============================ 電波なしで開く ============================ */
+
+function startSW() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol === 'file:') return;
+  navigator.serviceWorker.register('./sw.js').catch(function () { });
+}
+
+/* ================================ 起動 ================================ */
+
+function boot() {
+  var r;
+  try {
+    localStorage.setItem('nokichi.v1.probe', '1');
+    localStorage.removeItem('nokichi.v1.probe');
+  } catch (e) {
+    document.body.innerHTML = '<div style="padding:24px;font:600 17px/1.6 sans-serif">'
+      + '<h2 style="color:#c20d0d">このままでは使えません</h2>'
+      + '<p>データを保存できない状態です。<b>シークレットモード（プライベートブラウズ）で開いていませんか？</b></p>'
+      + '<p>ふつうのウィンドウで開いてから、ホーム画面に追加して使ってください。</p></div>';
+    return;
+  }
+  r = readAll();
+  LOG = r.entries;
+  S = rebuild(LOG);
+  if (LOG.length) saveLamp = { ok: true, at: S.lastAt, msg: '' };
+
+  /* はじめて開いたときは、ステーキを入れておく */
+  if (!S.menu.length) append({ t: 'menu', items: [{ id: 'i' + uid(), name: 'ステーキ', price: 1300, hidden: false }] }, true);
+
+  loadDraft();
+  tab = (S.event && !S.event.closedAt && waiting().length) ? 'wait' : 'order';
+  render();
+  startSW();
+  reqWake();
+
+  if (r.broken) openBroken(r.broken);
+  else if (!S.event || S.event.closedAt) openStart();
+  else if (waiting().length) openResume();
+}
+
+boot();
+</script>
+</body>
+</html>
