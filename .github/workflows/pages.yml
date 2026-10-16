@@ -4,11 +4,14 @@
 # ※ はじめの1回だけ、持ち主の操作が必要です。
 #    リポジトリの Settings → Pages → Source を「GitHub Actions」にしてください。
 #    （Pages を有効にする操作だけは、GitHub がワークフローに許可していないため）
+#
+# 公開は main から行う。GitHub が作る github-pages 環境は、既定で
+# 「既定のブランチからのみ公開可」になっているため、作業ブランチからは公開できない。
 name: Pages
 
 on:
   push:
-    branches: ["claude/yatai-pos-app-brainstorm-ext602"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
