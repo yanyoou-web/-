@@ -1,0 +1,37 @@
+# このブランチに push するたびに、GitHub Pages へ自動で公開する。
+# 公開先 → https://yanyoou-web.github.io/-/
+name: Pages
+
+on:
+  push:
+    branches: ["claude/yatai-pos-app-brainstorm-ext602"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pages の設定（まだなら有効にする）
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: 中身をまとめる
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: 公開する
+        id: deploy
+        uses: actions/deploy-pages@v4
