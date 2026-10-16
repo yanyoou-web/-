@@ -1,5 +1,9 @@
 # このブランチに push するたびに、GitHub Pages へ自動で公開する。
 # 公開先 → https://yanyoou-web.github.io/-/
+#
+# ※ はじめの1回だけ、持ち主の操作が必要です。
+#    リポジトリの Settings → Pages → Source を「GitHub Actions」にしてください。
+#    （Pages を有効にする操作だけは、GitHub がワークフローに許可していないため）
 name: Pages
 
 on:
@@ -24,10 +28,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Pages の設定（まだなら有効にする）
+      - name: Pages の設定を読む
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: 中身をまとめる
         uses: actions/upload-pages-artifact@v3
         with:
