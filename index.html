@@ -47,7 +47,9 @@ body{
   font:500 17px/1.45 var(--f-ui);
   overscroll-behavior:none;-webkit-text-size-adjust:100%;
   font-feature-settings:"palt" 1;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
 }
+input,textarea{-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .d{font-family:var(--f-disp);font-weight:400;letter-spacing:.01em}
@@ -234,6 +236,13 @@ label.fld > span{display:block;font-size:12px;font-weight:700;color:var(--sub);m
 .tk.vlate .el{color:var(--bad)}
 .tk .flag{font-size:13px;font-weight:700;color:var(--bad);margin:0 0 8px}
 .tk .btn{min-height:58px;font-size:18px}
+.tk{transition:outline-color .12s ease}
+.tk.holding{outline:3px solid var(--accent);outline-offset:-3px}
+.tk .more{
+  margin-left:auto;min-width:50px;height:38px;flex:0 0 auto;
+  border:1px solid var(--line);border-radius:10px;background:var(--raised);
+  color:var(--sub);font-size:18px;line-height:1;padding:0
+}
 .tk:not(.next){padding:10px}
 .tk:not(.next) .no{font-size:25px;min-width:40px}
 .tk:not(.next) .what{font-size:19px}
@@ -801,6 +810,7 @@ function vWait() {
     out += '<div class="meta"><span class="markview">' + markHtml(t.mark) + '</span>'
       + '<span class="el" data-since="' + t.createdAt + '">' + elapsedText(t.createdAt) + '</span>';
     if (i > 0) out += '<span class="tiny" data-eta="' + i + '">あと約' + Math.max(1, Math.round(base * i / 60)) + '分</span>';
+    out += '<button class="more" data-a="askVoid" data-v="' + h(t.id) + '" aria-label="取り消す">⋯</button>';
     out += '</div>';
     if (el > lim) out += '<div class="flag">⚠ 約' + Math.round(lim / 60) + '分と案内しています。声をかけてください。</div>';
     if (dup) out += '<div class="flag">⚠ 同じ内容・同じ印の人がほかにもいます。お客さんに注文内容を言ってもらってください。</div>';
@@ -809,7 +819,8 @@ function vWait() {
   });
   out += '<div class="tiny" style="text-align:center;padding:4px 0 10px">'
     + '上の「焼く数」は、まだ渡していない注文の点数です。調理係にそのまま伝えられます。<br>'
-    + 'カードを長押しすると取り消せます。渡したあと5秒は「戻す」が出ます。</div>';
+    + 'カードの <b>⋯</b> を押すと取り消せます（カードの長押しでも出ます）。<br>'
+    + '渡したあと5秒は「戻す」が出ます。</div>';
   return out;
 }
 
@@ -1320,6 +1331,7 @@ function act(a, v, el) {
       }
       return;
     }
+    case 'askVoid': openVoid(v); return;
     case 'doVoid': {
       var sp = String(v).split('|'), id = sp[0], rs = sp[1] || '';
       closeOver();
@@ -1525,16 +1537,31 @@ document.addEventListener('click', function (ev) {
   act(el.dataset.a, el.dataset.v, el);
 }, false);
 
-/* カードの長押しで取り消し */
-var lpT = null;
+/* カードの長押しで取り消し。
+   指は押しているあいだも必ず少し動くので、少しの動きでは切らない。
+   はっきり動かしたとき（＝画面をなぞったとき）だけ取りやめる。 */
+var lpT = null, lpX = 0, lpY = 0, lpEl = null;
+var LP_MS = 500, LP_SLOP = 14;   /* 14px 動いたら、押したのではなく なぞったとみなす */
+
+function lpStop() {
+  if (lpT) { clearTimeout(lpT); lpT = null; }
+  if (lpEl) { lpEl.classList.remove('holding'); lpEl = null; }
+}
 document.addEventListener('pointerdown', function (ev) {
   var el = ev.target.closest('[data-long]');
   if (!el || ev.target.closest('[data-a]')) return;
+  lpStop();
   var id = el.dataset.long;
-  lpT = setTimeout(function () { lpT = null; openVoid(id); }, 600);
+  lpX = ev.clientX; lpY = ev.clientY;
+  lpEl = el; el.classList.add('holding');
+  lpT = setTimeout(function () { lpT = null; lpStop(); openVoid(id); }, LP_MS);
 }, { passive: true });
-['pointerup', 'pointercancel', 'pointermove', 'scroll'].forEach(function (t) {
-  document.addEventListener(t, function () { if (lpT) { clearTimeout(lpT); lpT = null; } }, { passive: true });
+document.addEventListener('pointermove', function (ev) {
+  if (!lpT) return;
+  if (Math.abs(ev.clientX - lpX) > LP_SLOP || Math.abs(ev.clientY - lpY) > LP_SLOP) lpStop();
+}, { passive: true });
+['pointerup', 'pointercancel', 'scroll', 'touchend', 'touchcancel'].forEach(function (t) {
+  document.addEventListener(t, lpStop, { passive: true });
 });
 
 /* 重ねる画面の外側を押したら閉じる（復帰の知らせなど大事なものは閉じない） */

@@ -2,7 +2,7 @@
    一度書いたら、ふだんは触らない。
    index.html を直したときは、下の VERSION の数字を1つ増やす。 */
 
-var VERSION = 'nokichi-v2';
+var VERSION = 'nokichi-v3';
 var FILES = [
   './',
   './index.html',
